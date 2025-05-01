@@ -1,7 +1,15 @@
 EXE=htproxy
 
-$(EXE): main.c
-	cc -Wall -o $@ $<
+
+$(EXE): FORCE
+	cargo build
+	cp ./target/debug/htproxy ./htproxy
+
+FORCE: ;
+
+clean:
+	rm -rf ./target
+	rm -rf ./htproxy
 
 format:
-	clang-format -style=file -i *.c
+	echo ""
