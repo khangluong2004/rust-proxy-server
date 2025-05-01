@@ -69,6 +69,8 @@ impl<'a> HttpParser<'a> {
 
     pub fn read_bytes(self: &mut HttpParser<'a>) -> Result<Vec<u8>, Box<dyn Error>> {
         if self.buffer.len() > 0 {
+            self.lines += &String::from_utf8(self.buffer.clone())?;
+            
             let result = self.buffer.to_vec();
             self.buffer.clear();
             return Ok(result);
@@ -76,6 +78,8 @@ impl<'a> HttpParser<'a> {
 
         let mut buffer = vec![0; Self::READ_BUFFER_SIZE];
         self.stream.read(&mut buffer)?;
+
+        self.lines += &String::from_utf8(buffer.clone())?;
         Ok(buffer.to_vec())
     }
 }

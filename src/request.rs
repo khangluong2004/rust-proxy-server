@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::error::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Request {
     pub method: String,
     pub url: String,
@@ -10,6 +10,9 @@ pub struct Request {
 }
 
 impl Request {
+    pub fn get_host(self: &Request) -> String {
+        self.headers.get("host").unwrap().clone()
+    }
     pub fn from_string(request: String) -> Result<Self, Box<dyn Error>> {
         let mut headers = HashMap::new();
 
