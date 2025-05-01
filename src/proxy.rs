@@ -39,7 +39,11 @@ impl Proxy {
     fn evict_lru(self: &mut Proxy) {
         if self.cache.len() > 0 {
             let last_request = &self.cache[self.cache.len() - 1].2;
-            println!("Evicting {} {} from cache", last_request.get_host(), last_request.url);
+            println!(
+                "Evicting {} {} from cache",
+                last_request.get_host(),
+                last_request.url
+            );
 
             self.cache.pop();
         }
@@ -53,7 +57,6 @@ impl Proxy {
         // get request
         let mut parser = HttpParser::new(&mut stream);
         let request = parser.read_request()?;
-        println!("[debug] request {:?}", request);
 
         // magic number 3
         let lines = parser.lines.split("\r\n").collect::<Vec<&str>>();
@@ -73,7 +76,9 @@ impl Proxy {
                 return Ok(());
             } else {
                 // evict
-                self.evict_lru();
+                if self.cache.len() == 10 {
+                    self.evict_lru();
+                }
             }
         }
 
