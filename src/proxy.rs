@@ -45,7 +45,7 @@ impl Proxy {
                 last_request.url
             );
 
-            self.cache.pop();
+            self.cache.remove(0);
         }
     }
 
