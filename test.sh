@@ -1,0 +1,8 @@
+# Check for response headers. Script only checks data.
+# Can't close connection because of http/2
+PROXY="127.0.0.1:80"
+
+curl -v http://www.washington.edu/ -o washington_real.txt
+curl --proxy "$PROXY" -v http://www.washington.edu/ -o washington_proxy.txt
+diff washington_real.txt washington_proxy.txt | head -n 10
+

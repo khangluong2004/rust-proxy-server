@@ -3,10 +3,8 @@ mod response;
 mod http_parser;
 mod proxy;
 
-use std::collections::HashMap;
 use std::env;
 use std::error::Error;
-use std::io::{Read, Write};
 use crate::proxy::Proxy;
 
 fn main() -> Result<(), Box<dyn Error>> {

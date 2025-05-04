@@ -1,6 +1,5 @@
 use crate::http_parser::HttpParser;
 use crate::request::Request;
-use std::collections::{HashMap, LinkedList, VecDeque};
 use std::error::Error;
 use std::io::Write;
 use std::net::{Shutdown, TcpListener, TcpStream};
@@ -11,6 +10,8 @@ pub struct Proxy {
 }
 
 impl Proxy {
+    const TAIL_OFFSET: usize = 3;
+    const CACHE_MAX: usize = 10;
     pub fn new(does_cache: bool) -> Self {
         Self {
             does_cache,
@@ -19,17 +20,17 @@ impl Proxy {
     }
 
     fn get_cached(self: &mut Proxy, request: &String) -> Option<String> {
-        for (i, entry) in self.cache.iter().enumerate() {
-            if &entry.0 == request {
-                // place lru to back of list
-                let entry = entry.clone();
-                self.cache.remove(i);
-                self.cache.push(entry.clone());
-                return Some(entry.1);
-            }
-        }
+        let found_entry_index = self.cache.iter().position(|entry| &entry.0 == request);
+        let Some(index) = found_entry_index else {
+            return None;
+        };
 
-        None
+        let entry_copy = self.cache.get(index)?.clone();
+        let result = entry_copy.1.clone();
+        self.cache.remove(index);
+        self.cache.push(entry_copy);
+        Some(result)
+
     }
 
     fn add_cache(self: &mut Proxy, req: String, res: String, request: Request) {
@@ -38,7 +39,7 @@ impl Proxy {
 
     fn evict_lru(self: &mut Proxy) {
         if self.cache.len() > 0 {
-            let last_request = &self.cache[self.cache.len() - 1].2;
+            let last_request = &self.cache[0].2;
             println!(
                 "Evicting {} {} from cache",
                 last_request.get_host(),
@@ -50,7 +51,8 @@ impl Proxy {
     }
 
     fn handle_connection(self: &mut Proxy, mut stream: TcpStream) -> Result<(), Box<dyn Error>> {
-        // set socket params
+        // set socket params (Why?)
+        // No need for SO_REUSEADDR as set by default
         stream.set_nodelay(true)?;
         println!("Accepted");
 
@@ -60,7 +62,7 @@ impl Proxy {
 
         // magic number 3
         let lines = parser.lines.split("\r\n").collect::<Vec<&str>>();
-        println!("Request tail {}", lines[lines.len() - 3]);
+        println!("Request tail {}", lines[lines.len() - Self::TAIL_OFFSET]);
 
         let request_lines = parser.lines;
         let host = request.get_host();
@@ -74,12 +76,7 @@ impl Proxy {
                 stream.write_all(value.as_bytes())?;
                 stream.shutdown(Shutdown::Both)?;
                 return Ok(());
-            } else {
-                // evict
-                if self.cache.len() == 10 {
-                    self.evict_lru();
-                }
-            }
+            }     
         }
 
         println!("GETting {} {}", host, request.url);
@@ -113,10 +110,17 @@ impl Proxy {
 
         let response_lines = parser.lines;
         if self.does_cache && request_lines.len() < 2000 && response_lines.len() < 100_000 {
+            // evict
+            if self.cache.len() == Self::CACHE_MAX {
+                self.evict_lru();
+            }
+            
             // cache response
             self.add_cache(request_lines, response_lines, request);
         }
 
+        // Close the server connection as well
+        proxy.shutdown(Shutdown::Both)?;
         Ok(())
     }
 

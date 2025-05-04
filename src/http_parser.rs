@@ -12,6 +12,7 @@ pub struct HttpParser<'a> {
 
 impl<'a> HttpParser<'a> {
     const READ_BUFFER_SIZE: usize = 1024;
+    const RESPONSE_MAX_SIZE: usize = 100_000;
     pub fn new(stream: &'a mut TcpStream) -> Self {
         HttpParser {
             stream,
@@ -22,21 +23,18 @@ impl<'a> HttpParser<'a> {
 
     fn read_line(self: &mut HttpParser<'a>) -> Result<String, Box<dyn Error>> {
         loop {
-            loop {
-                // check for \r\n
-                let line = String::from_utf8(self.buffer.clone())?;
-                if line.contains("\r\n") {
-                    let line = line.split("\r\n").nth(0).unwrap().to_string();
-                    self.buffer = self.buffer[line.len() + "\r\n".len()..].to_owned();
-
-                    return Ok(line);
-                } else {
-                    break;
-                }
+            // check for \r\n
+            // Rust uses UTF8, which is backward-compatible with ASCII and ISO-8859-1
+            let line = String::from_utf8(self.buffer.clone())?;
+            if line.contains("\r\n") {
+                let line = line.split("\r\n").nth(0).unwrap().to_string();
+                self.buffer = self.buffer[(line.len() + "\r\n".len())..].to_owned();
+                return Ok(line);
             }
 
             let mut buffer = vec![0; Self::READ_BUFFER_SIZE];
-            self.stream.read(&mut buffer)?;
+            let bytes_read = self.stream.read(&mut buffer)?;
+            buffer.resize(bytes_read, 0);
             self.buffer.extend_from_slice(&buffer);
         }
     }
@@ -68,18 +66,23 @@ impl<'a> HttpParser<'a> {
     }
 
     pub fn read_bytes(self: &mut HttpParser<'a>) -> Result<Vec<u8>, Box<dyn Error>> {
+        // Read the remaining after reading the header 
+        // Note, since buffer is shrunk to its exact length, no need to truncate
+        // bunch of zeros
         if self.buffer.len() > 0 {
             self.lines += &String::from_utf8(self.buffer.clone())?;
-            
             let result = self.buffer.to_vec();
             self.buffer.clear();
             return Ok(result);
         }
 
         let mut buffer = vec![0; Self::READ_BUFFER_SIZE];
-        self.stream.read(&mut buffer)?;
-
-        self.lines += &String::from_utf8(buffer.clone())?;
-        Ok(buffer.to_vec())
+        let bytes_read = self.stream.read(&mut buffer)?;
+        buffer.resize(bytes_read, 0);
+        
+        if self.lines.len() <= Self::RESPONSE_MAX_SIZE {
+            self.lines += &String::from_utf8(buffer.clone())?;
+        }
+        Ok(buffer)
     }
 }
