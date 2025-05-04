@@ -4,7 +4,7 @@ use std::error::Error;
 use std::io::Write;
 use std::net::{Shutdown, TcpListener, TcpStream};
 
-use std::time::{self, Duration, Instant};
+use std::time::Instant;
 
 pub struct Proxy {
     does_cache: bool,
@@ -23,7 +23,7 @@ impl Proxy {
 
     // Task 3:
 
-    fn is_cache_allowed(self: &mut Proxy, cache_header: &String) -> bool{
+    fn is_cache_allowed(self: &Proxy, cache_header: &String) -> bool{
         !(cache_header == "private" 
             || cache_header == "no-store"
             || cache_header == "no-cache"
@@ -45,7 +45,7 @@ impl Proxy {
         }
     }
 
-    fn check_time_out(self: &Proxy, time_now: Instant, expiry: Option<u32>) -> bool{
+    fn check_time_out(self: &Proxy, time_now: &Instant, expiry: Option<u32>) -> bool{
         let Some(expiry_secs) = expiry else {
             return false;
         };
@@ -61,27 +61,27 @@ impl Proxy {
 
     // Other tasks
 
-    fn get_cached(self: &mut Proxy, request: &String) -> Option<String> {
+    fn get_cached(self: &mut Proxy, request: &String) -> Option<(Option<String>, bool)> {
         let found_entry_index = self.cache.iter().position(|entry| &entry.0 == request);
+        let mut is_expired = false;
         let Some(index) = found_entry_index else {
-            return None;
+            return Some((None, is_expired));
         };
         
         let entry_ref = self.cache.get(index)?;
-        let host = &entry_ref.2.get_host();
-        let url = &entry_ref.2.url;
 
-        if self.check_time_out(entry_ref.3, entry_ref.4){
-            println!("Stale entry for {} {}", host, url);
+        if self.check_time_out(&entry_ref.3, entry_ref.4){
+            is_expired = true;
+            // Remove from cache (and so the lru)
             self.cache.remove(index);
-            return None;
+            return Some((None, is_expired));
         }
 
         let entry_copy = self.cache.get(index)?.clone();
         let result = entry_copy.1.clone();
         self.cache.remove(index);
         self.cache.push(entry_copy);
-        Some(result)
+        Some((Some(result), is_expired))
 
     }
 
@@ -118,17 +118,23 @@ impl Proxy {
 
         let request_lines = parser.lines;
         let host = request.get_host();
+        let mut is_expired = false;
 
         if self.does_cache && request_lines.len() < 2000 {
             // check cache
-            if let Some(value) = self.get_cached(&request_lines) {
-                // use cache
-                println!("Serving {} {} from cache", host, request.url);
+            if let Some((option_string, local_is_expired)) = self.get_cached(&request_lines) {
+                is_expired = local_is_expired;
 
-                stream.write_all(value.as_bytes())?;
-                stream.shutdown(Shutdown::Both)?;
-                return Ok(());
-            }     
+                if let Some(cache_value) = option_string {
+                    // use cache
+                    println!("Serving {} {} from cache", host, request.url);
+
+                    stream.write_all(cache_value.as_bytes())?;
+                    stream.shutdown(Shutdown::Both)?;
+                    return Ok(());
+                }
+            }
+
         }
 
         println!("GETting {} {}", host, request.url);
@@ -178,6 +184,11 @@ impl Proxy {
             if !allow_cache {
                 println!("Not caching {} {}", host, request.url);
             } else {
+                // Logging for task 4
+                if is_expired {
+                    println!("Stale entry for {} {}", host, request.url);
+                }
+                
                 // evict
                 if self.cache.len() == Self::CACHE_MAX {
                     self.evict_lru();
