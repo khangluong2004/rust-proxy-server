@@ -4,9 +4,11 @@ use std::error::Error;
 use std::io::Write;
 use std::net::{Shutdown, TcpListener, TcpStream};
 
+use std::time::{self, Duration, Instant};
+
 pub struct Proxy {
     does_cache: bool,
-    cache: Vec<(String, String, Request, Option<u32>)>,
+    cache: Vec<(String, String, Request, Instant, Option<u32>)>,
 }
 
 impl Proxy {
@@ -19,7 +21,7 @@ impl Proxy {
         }
     }
 
-    // Task 4:
+    // Task 3:
 
     fn is_cache_allowed(self: &mut Proxy, cache_header: &String) -> bool{
         !(cache_header == "private" 
@@ -30,7 +32,8 @@ impl Proxy {
             || cache_header == "proxy-revalidate")
     } 
 
-    fn get_cache_expire(self: &mut Proxy, cache_header: &String) -> Option<u32>{
+    // Task 4 helpers
+    fn get_cache_expire(self: &Proxy, cache_header: &String) -> Option<u32>{
         if !cache_header.contains("max-age=") {
             return None;
         }
@@ -42,13 +45,37 @@ impl Proxy {
         }
     }
 
-    // End task 4
+    fn check_time_out(self: &Proxy, time_now: Instant, expiry: Option<u32>) -> bool{
+        let Some(expiry_secs) = expiry else {
+            return false;
+        };
+
+        let elapsed_secs = time_now.elapsed().as_secs();
+
+        if elapsed_secs > (expiry_secs as u64) {
+            return false;
+        }
+
+        true
+    }
+
+    // Other tasks
 
     fn get_cached(self: &mut Proxy, request: &String) -> Option<String> {
         let found_entry_index = self.cache.iter().position(|entry| &entry.0 == request);
         let Some(index) = found_entry_index else {
             return None;
         };
+        
+        let entry_ref = self.cache.get(index)?;
+        let host = &entry_ref.2.get_host();
+        let url = &entry_ref.2.url;
+
+        if self.check_time_out(entry_ref.3, entry_ref.4){
+            println!("Stale entry for {} {}", host, url);
+            self.cache.remove(index);
+            return None;
+        }
 
         let entry_copy = self.cache.get(index)?.clone();
         let result = entry_copy.1.clone();
@@ -59,7 +86,8 @@ impl Proxy {
     }
 
     fn add_cache(self: &mut Proxy, req: String, res: String, request: Request, expiry: Option<u32>) {
-        self.cache.push((req, res, request, expiry));
+        let time_now = Instant::now();
+        self.cache.push((req, res, request, time_now, expiry));
     }
 
     fn evict_lru(self: &mut Proxy) {
