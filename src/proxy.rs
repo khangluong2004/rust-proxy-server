@@ -73,6 +73,7 @@ impl Proxy {
         if self.check_time_out(&entry_ref.3, entry_ref.4){
             is_expired = true;
             // Remove from cache (and so the lru)
+            // TODO: Check if we are allowed here
             self.cache.remove(index);
             return Some((None, is_expired));
         }
@@ -118,6 +119,7 @@ impl Proxy {
 
         let request_lines = parser.lines;
         let host = request.get_host();
+        let url = request.url.clone();
         let mut is_expired = false;
 
         if self.does_cache && request_lines.len() < 2000 {
@@ -137,7 +139,12 @@ impl Proxy {
 
         }
 
-        println!("GETting {} {}", host, request.url);
+        // Logging for task 4
+        if is_expired {
+            println!("Stale entry for {} {}", host, url);
+        }
+
+        println!("GETting {} {}", host, url);
 
         // create remote server socket and forward request
         let mut proxy = TcpStream::connect(format!("{}:80", host))?;
@@ -182,13 +189,8 @@ impl Proxy {
         let response_lines = parser.lines;
         if self.does_cache && request_lines.len() < 2000 && response_lines.len() < 100_000 {
             if !allow_cache {
-                println!("Not caching {} {}", host, request.url);
+                println!("Not caching {} {}", host, url);
             } else {
-                // Logging for task 4
-                if is_expired {
-                    println!("Stale entry for {} {}", host, request.url);
-                }
-                
                 // evict
                 if self.cache.len() == Self::CACHE_MAX {
                     self.evict_lru();
@@ -196,6 +198,15 @@ impl Proxy {
                 
                 // cache response
                 self.add_cache(request_lines, response_lines, request, expiry_time);
+            }
+        } else {
+            // If expired, and can't be cached, log evict
+            if is_expired {
+                println!(
+                    "Evicting {} {} from cache",
+                    host,
+                    url
+                );
             }
         }
 
