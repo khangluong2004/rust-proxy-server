@@ -13,6 +13,7 @@ impl Request {
     pub fn get_host(self: &Request) -> String {
         self.headers.get("host").unwrap().clone()
     }
+    
     pub fn from_string(request: String) -> Result<Self, Box<dyn Error>> {
         let mut headers = HashMap::new();
 

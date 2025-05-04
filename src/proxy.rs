@@ -6,7 +6,7 @@ use std::net::{Shutdown, TcpListener, TcpStream};
 
 pub struct Proxy {
     does_cache: bool,
-    cache: Vec<(String, String, Request)>,
+    cache: Vec<(String, String, Request, Option<u32>)>,
 }
 
 impl Proxy {
@@ -18,6 +18,31 @@ impl Proxy {
             cache: Vec::new(),
         }
     }
+
+    // Task 4:
+
+    fn is_cache_allowed(self: &mut Proxy, cache_header: &String) -> bool{
+        !(cache_header == "private" 
+            || cache_header == "no-store"
+            || cache_header == "no-cache"
+            || cache_header == "max-age=0"
+            || cache_header == "must-validate"
+            || cache_header == "proxy-revalidate")
+    } 
+
+    fn get_cache_expire(self: &mut Proxy, cache_header: &String) -> Option<u32>{
+        if !cache_header.contains("max-age=") {
+            return None;
+        }
+        
+        let prefix_len = "max-age".len();
+        match cache_header[prefix_len..].parse::<u32>(){
+            Ok(expiry_time) => Some(expiry_time),
+            Err(_) => None
+        }
+    }
+
+    // End task 4
 
     fn get_cached(self: &mut Proxy, request: &String) -> Option<String> {
         let found_entry_index = self.cache.iter().position(|entry| &entry.0 == request);
@@ -33,8 +58,8 @@ impl Proxy {
 
     }
 
-    fn add_cache(self: &mut Proxy, req: String, res: String, request: Request) {
-        self.cache.push((req, res, request));
+    fn add_cache(self: &mut Proxy, req: String, res: String, request: Request, expiry: Option<u32>) {
+        self.cache.push((req, res, request, expiry));
     }
 
     fn evict_lru(self: &mut Proxy) {
@@ -60,7 +85,6 @@ impl Proxy {
         let mut parser = HttpParser::new(&mut stream);
         let request = parser.read_request()?;
 
-        // magic number 3
         let lines = parser.lines.split("\r\n").collect::<Vec<&str>>();
         println!("Request tail {}", lines[lines.len() - Self::TAIL_OFFSET]);
 
@@ -88,12 +112,25 @@ impl Proxy {
         // read server header
         let mut parser = HttpParser::new(&mut proxy);
         let response = parser.read_response_header()?;
+        
+        // Get content length
         let content_length = response
             .headers
             .get("content-length")
             .unwrap_or(&"0".to_string())
             .parse::<usize>()?;
         println!("Response body length {}", content_length);
+
+
+        // Get cache-control
+        let mut allow_cache = true;
+        let mut expiry_time = None;
+        if let Some(cache_control_val) = response
+            .headers
+            .get("cache-control") {
+                allow_cache = self.is_cache_allowed(cache_control_val);
+                expiry_time = self.get_cache_expire(cache_control_val);
+        };
 
         // forward header
         stream.write_all(parser.lines.as_bytes())?;
@@ -110,13 +147,17 @@ impl Proxy {
 
         let response_lines = parser.lines;
         if self.does_cache && request_lines.len() < 2000 && response_lines.len() < 100_000 {
-            // evict
-            if self.cache.len() == Self::CACHE_MAX {
-                self.evict_lru();
+            if !allow_cache {
+                println!("Not caching {} {}", host, request.url);
+            } else {
+                // evict
+                if self.cache.len() == Self::CACHE_MAX {
+                    self.evict_lru();
+                }
+                
+                // cache response
+                self.add_cache(request_lines, response_lines, request, expiry_time);
             }
-            
-            // cache response
-            self.add_cache(request_lines, response_lines, request);
         }
 
         // Close the server connection as well
