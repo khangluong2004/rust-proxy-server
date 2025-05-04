@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use std::error::Error;
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Request {
-    pub method: String,
+    // pub method: String,
     pub url: String,
-    pub format: String,
+    // pub format: String,
     pub headers: HashMap<String, String>,
 }
 
@@ -13,13 +13,13 @@ impl Request {
     pub fn get_host(self: &Request) -> String {
         self.headers.get("host").unwrap().clone()
     }
-    
+
     pub fn from_string(request: String) -> Result<Self, Box<dyn Error>> {
         let mut headers = HashMap::new();
 
         // first line is special
         let first = request.split("\r\n").nth(0).unwrap();
-        let [method, url, format] = &first
+        let [_method, url, _format] = &first
             .split(" ")
             .into_iter()
             .map(String::from)
@@ -43,9 +43,9 @@ impl Request {
         }
 
         Ok(Request {
-            method: method.clone(),
+            // method: method.clone(),
             url: url.clone(),
-            format: format.clone(),
+            // format: format.clone(),
             headers,
         })
     }
