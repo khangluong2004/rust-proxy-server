@@ -2,6 +2,8 @@ mod request;
 mod response;
 mod http_parser;
 mod proxy;
+mod cache;
+mod lru_queue;
 
 use std::env;
 use std::error::Error;

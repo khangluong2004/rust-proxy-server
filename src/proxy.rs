@@ -1,28 +1,25 @@
 use crate::http_parser::HttpParser;
-use crate::request::Request;
+use crate::cache::Cache;
 use std::error::Error;
 use std::io::Write;
 use std::net::{Shutdown, TcpListener, TcpStream};
 
-use std::time::Instant;
 
 pub struct Proxy {
     does_cache: bool,
-    cache: Vec<(String, String, Request, Instant, Option<u32>)>,
+    cache: Cache,
 }
 
 impl Proxy {
     const TAIL_OFFSET: usize = 3;
-    const CACHE_MAX: usize = 10;
     pub fn new(does_cache: bool) -> Self {
         Self {
             does_cache,
-            cache: Vec::new(),
+            cache: Cache::new(),
         }
     }
 
     // Task 3:
-
     fn is_cache_allowed(self: &Proxy, cache_header: &String) -> bool{
         !(cache_header == "private" 
             || cache_header == "no-store"
@@ -42,65 +39,6 @@ impl Proxy {
         match cache_header[prefix_len..].parse::<u32>(){
             Ok(expiry_time) => Some(expiry_time),
             Err(_) => None
-        }
-    }
-
-    fn check_time_out(self: &Proxy, time_now: &Instant, expiry: Option<u32>) -> bool{
-        let Some(expiry_secs) = expiry else {
-            return false;
-        };
-
-        let elapsed_secs = time_now.elapsed().as_secs();
-
-        if elapsed_secs > (expiry_secs as u64) {
-            return false;
-        }
-
-        true
-    }
-
-    // Other tasks
-
-    fn get_cached(self: &mut Proxy, request: &String) -> Option<(Option<String>, bool)> {
-        let found_entry_index = self.cache.iter().position(|entry| &entry.0 == request);
-        let mut is_expired = false;
-        let Some(index) = found_entry_index else {
-            return Some((None, is_expired));
-        };
-        
-        let entry_ref = self.cache.get(index)?;
-
-        if self.check_time_out(&entry_ref.3, entry_ref.4){
-            is_expired = true;
-            // Remove from cache (and so the lru)
-            // TODO: Check if we are allowed here
-            self.cache.remove(index);
-            return Some((None, is_expired));
-        }
-
-        let entry_copy = self.cache.get(index)?.clone();
-        let result = entry_copy.1.clone();
-        self.cache.remove(index);
-        self.cache.push(entry_copy);
-        Some((Some(result), is_expired))
-
-    }
-
-    fn add_cache(self: &mut Proxy, req: String, res: String, request: Request, expiry: Option<u32>) {
-        let time_now = Instant::now();
-        self.cache.push((req, res, request, time_now, expiry));
-    }
-
-    fn evict_lru(self: &mut Proxy) {
-        if self.cache.len() > 0 {
-            let last_request = &self.cache[0].2;
-            println!(
-                "Evicting {} {} from cache",
-                last_request.get_host(),
-                last_request.url
-            );
-
-            self.cache.remove(0);
         }
     }
 
@@ -124,7 +62,7 @@ impl Proxy {
 
         if self.does_cache && request_lines.len() < 2000 {
             // check cache
-            if let Some((option_string, local_is_expired)) = self.get_cached(&request_lines) {
+            if let Some((option_string, local_is_expired)) = self.cache.get_cached(&request_lines) {
                 is_expired = local_is_expired;
 
                 if let Some(cache_value) = option_string {
@@ -191,22 +129,17 @@ impl Proxy {
             if !allow_cache {
                 println!("Not caching {} {}", host, url);
             } else {
-                // evict
-                if self.cache.len() == Self::CACHE_MAX {
-                    self.evict_lru();
-                }
-                
                 // cache response
-                self.add_cache(request_lines, response_lines, request, expiry_time);
+                let is_evicted = self.cache.add_cache(request_lines, response_lines, expiry_time);
+                if is_evicted {
+                    println!("Evicting {} {} from cache", host, url);
+                }
             }
         } else {
             // If expired, and can't be cached, log evict
+            // Already removed while trying to get from cache
             if is_expired {
-                println!(
-                    "Evicting {} {} from cache",
-                    host,
-                    url
-                );
+                println!("Evicting {} {} from cache", host, url);
             }
         }
 
