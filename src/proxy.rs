@@ -20,26 +20,76 @@ impl Proxy {
     }
 
     // Task 3:
-    fn is_cache_allowed(self: &Proxy, cache_header: &String) -> bool{
+    fn is_cache_allowed_single(self: &Proxy, cache_header: &String) -> bool{
+        // TODO: Is "max-age=\"0\"" valid
         !(cache_header == "private" 
             || cache_header == "no-store"
             || cache_header == "no-cache"
             || cache_header == "max-age=0"
             || cache_header == "must-validate"
             || cache_header == "proxy-revalidate")
-    } 
+    }
 
-    // Task 4 helpers
-    fn get_cache_expire(self: &Proxy, cache_header: &String) -> Option<u32>{
-        if !cache_header.contains("max-age=") {
-            return None;
+    // Special parse for cache header: Split by comma, and treat quoted string 
+    // as 1 token
+    fn cache_control_split(self: &Proxy, cache_header: &String) -> Vec<String>{
+        let mut result = Vec::new();
+        let mut cur_str = String::new();
+        let mut is_quoted = false;
+        for c in cache_header.chars(){
+            // End the word if is not in quote and get comma
+            if !is_quoted && c == ',' {
+                result.push(cur_str.clone());
+                cur_str.clear();
+                continue;
+            }
+
+            // Skip space and htab if not in quoted
+            if !is_quoted && (c == ' ' || c == '\t'){
+                continue;
+            }  
+
+            // Start quote
+            if c == '"'{
+                is_quoted = !is_quoted;
+            }
+
+            cur_str.push(c);
+        }
+
+        // Add the end, if any
+        if cur_str.len() > 0 {
+            result.push(cur_str);
         }
         
-        let prefix_len = "max-age".len();
-        match cache_header[prefix_len..].parse::<u32>(){
-            Ok(expiry_time) => Some(expiry_time),
-            Err(_) => None
+        result
+    }
+
+    fn is_cache_allowed(self: &Proxy, word_list: &Vec<String>) -> bool{
+        for word in word_list{
+            if !self.is_cache_allowed_single(word) {
+                return false;
+            }
         }
+
+        true
+    }
+
+    // Task 4 helpers
+    fn get_cache_expire(self: &Proxy, cache_directive_list: &Vec<String>) -> Option<u32>{
+        for cache_directive in cache_directive_list {
+            if !cache_directive.contains("max-age=") {
+                continue;
+            }
+            
+            let prefix_len = "max-age".len();
+            match cache_directive[prefix_len..].parse::<u32>(){
+                Ok(expiry_time) => {return Some(expiry_time);},
+                Err(_) => {return None;}
+            };
+        }
+
+        None
     }
 
     fn handle_connection(self: &mut Proxy, mut stream: TcpStream) -> Result<(), Box<dyn Error>> {
@@ -65,21 +115,23 @@ impl Proxy {
             if let Some((option_string, local_is_expired)) = self.cache.get_cached(&request_lines) {
                 is_expired = local_is_expired;
 
-                if let Some(cache_value) = option_string {
-                    // use cache
-                    println!("Serving {} {} from cache", host, request.url);
-
-                    stream.write_all(cache_value.as_bytes())?;
-                    stream.shutdown(Shutdown::Both)?;
-                    return Ok(());
+                if !is_expired {
+                    if let Some(cache_value) = option_string {
+                        // use cache
+                        println!("Serving {} {} from cache", host, request.url);
+                        stream.write_all(cache_value.as_bytes())?;
+                        stream.shutdown(Shutdown::Both)?;
+                        return Ok(());
+                    }
                 }
             }
 
         }
 
-        // Logging for task 4
         if is_expired {
+            // Logging for task 4
             println!("Stale entry for {} {}", host, url);
+            // TODO: Modify headers for task 5
         }
 
         println!("GETting {} {}", host, url);
@@ -107,8 +159,9 @@ impl Proxy {
         if let Some(cache_control_val) = response
             .headers
             .get("cache-control") {
-                allow_cache = self.is_cache_allowed(cache_control_val);
-                expiry_time = self.get_cache_expire(cache_control_val);
+                let word_list = self.cache_control_split(cache_control_val);
+                allow_cache = self.is_cache_allowed(&word_list);
+                expiry_time = self.get_cache_expire(&word_list);
         };
 
         // forward header
@@ -125,9 +178,20 @@ impl Proxy {
         stream.shutdown(Shutdown::Both)?;
 
         let response_lines = parser.lines;
+
+        // If is_expired, remove from cache and load back
+        if is_expired {
+            self.cache.remove_cache(&request_lines);
+        }
+
         if self.does_cache && request_lines.len() < 2000 && response_lines.len() < 100_000 {
             if !allow_cache {
                 println!("Not caching {} {}", host, url);
+                
+                // Cacheable, but not allowed to cache
+                if is_expired {
+                    println!("Evicting {} {} from cache", host, url);
+                }
             } else {
                 // cache response
                 let is_evicted = self.cache.add_cache(request_lines, response_lines, expiry_time);

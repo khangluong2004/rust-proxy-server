@@ -57,11 +57,7 @@ impl Cache {
 
         if self.check_time_out(&entry_ref.time_now, entry_ref.expiry_secs){
             is_expired = true;
-            // Remove from cache (and so the lru)
-            // TODO: Check if we are allowed here
-            self.cache.remove(request);
-            self.lru.remove_lru(request);
-            return Some((None, is_expired));
+            return Some((Some(entry_ref.response.clone()), is_expired));
         }
         
         // If in cache, move to end of lru
@@ -85,6 +81,11 @@ impl Cache {
         self.cache.insert(req, CacheRecord::new( res, time_now, expiry));
 
         is_evicted
+    }
+
+    pub fn remove_cache(self: &mut Cache, request: &String){
+        self.cache.remove(request);
+        self.lru.remove_lru(request);
     }
 
 }
