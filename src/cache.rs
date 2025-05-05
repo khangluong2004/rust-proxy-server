@@ -2,18 +2,22 @@ use crate::lru_queue::LruQueue;
 use std::collections::HashMap;
 use std::time::Instant;
 
+#[derive(Clone)]
 pub struct CacheRecord {
-    response: String,
-    time_now: Instant,
-    expiry_secs: Option<u32>,
+    pub response: String,
+    pub time_now: Instant,
+    pub expiry_secs: Option<u32>,
+    pub date: String
 }
 
 impl CacheRecord {
-    pub fn new(response: String, time_now: Instant, expiry_secs: Option<u32>) -> Self {
+    // Assume all response have Date, following specs
+    pub fn new(response: String, time_now: Instant, expiry_secs: Option<u32>, date: String) -> Self {
         Self {
             response,
             time_now,
             expiry_secs,
+            date
         }
     }
 }
@@ -46,7 +50,7 @@ impl Cache {
         true
     }
 
-    pub fn get_cached(self: &mut Cache, request: &String) -> Option<(Option<String>, bool)> {
+    pub fn get_cached(self: &mut Cache, request: &String) -> Option<(Option<CacheRecord>, bool)> {
         let mut is_expired = false;
         if !self.cache.contains_key(request) {
             return Some((None, is_expired));
@@ -56,15 +60,15 @@ impl Cache {
 
         if self.check_time_out(&entry_ref.time_now, entry_ref.expiry_secs) {
             is_expired = true;
-            return Some((Some(entry_ref.response.clone()), is_expired));
+            return Some((Some(entry_ref.clone()), is_expired));
         }
 
         // If in cache, move to end of lru
         self.lru.add_lru(request);
-        Some((Some(entry_ref.response.clone()), is_expired))
+        Some((Some(entry_ref.clone()), is_expired))
     }
 
-    pub fn add_cache(self: &mut Cache, req: String, res: String, expiry: Option<u32>) -> bool {
+    pub fn add_cache(self: &mut Cache, req: String, res: String, expiry: Option<u32>, date: String) -> bool {
         // evict if full
         let mut is_evicted = false;
         if self.cache.len() == Self::CACHE_MAX {
@@ -77,7 +81,7 @@ impl Cache {
         let time_now = Instant::now();
         self.lru.add_lru(&req);
         self.cache
-            .insert(req, CacheRecord::new(res, time_now, expiry));
+            .insert(req, CacheRecord::new(res, time_now, expiry, date));
 
         is_evicted
     }

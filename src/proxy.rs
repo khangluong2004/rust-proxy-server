@@ -105,7 +105,8 @@ impl Proxy {
         let lines = parser.lines.split("\r\n").collect::<Vec<&str>>();
         println!("Request tail {}", lines[lines.len() - Self::TAIL_OFFSET]);
 
-        let request_lines = parser.lines;
+        let original_request_lines = parser.lines.clone();
+        let mut request_lines = parser.lines.clone();
         let host = request.get_host();
         let url = request.url.clone();
         let mut is_expired = false;
@@ -115,23 +116,23 @@ impl Proxy {
             if let Some((option_string, local_is_expired)) = self.cache.get_cached(&request_lines) {
                 is_expired = local_is_expired;
 
-                if !is_expired {
-                    if let Some(cache_value) = option_string {
+                if let Some(cache_value) = option_string {
+                    if !is_expired {
                         // use cache
                         println!("Serving {} {} from cache", host, request.url);
-                        stream.write_all(cache_value.as_bytes())?;
+                        stream.write_all(cache_value.response.as_bytes())?;
                         stream.shutdown(Shutdown::Both)?;
                         return Ok(());
+                    } else {
+                        // Logging for task 4
+                        println!("Stale entry for {} {}", host, url);
+                        // Modify the request_lines for task 5
+                        request_lines = parser.add_header(request_lines, String::from("If-Modified-Since"), &cache_value.date);
                     }
+                    
                 }
             }
 
-        }
-
-        if is_expired {
-            // Logging for task 4
-            println!("Stale entry for {} {}", host, url);
-            // TODO: Modify headers for task 5
         }
 
         println!("GETting {} {}", host, url);
@@ -166,6 +167,13 @@ impl Proxy {
                 }
         };
 
+        // Get date
+        let Some(date_ref) = response.headers.get("date")
+        else {
+            return Err(Box::new(std::io::Error::new(std::io::ErrorKind::AddrNotAvailable, "No date in request")));
+        };
+        let date = date_ref.clone();
+
         // forward header
         stream.write_all(parser.lines.as_bytes())?;
 
@@ -196,7 +204,7 @@ impl Proxy {
                 }
             } else {
                 // cache response
-                let is_evicted = self.cache.add_cache(request_lines, response_lines, expiry_time);
+                let is_evicted = self.cache.add_cache(original_request_lines, response_lines, expiry_time, date);
                 if is_evicted {
                     println!("Evicting {} {} from cache", host, url);
                 }

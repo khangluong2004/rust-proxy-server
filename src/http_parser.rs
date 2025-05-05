@@ -11,6 +11,7 @@ pub struct HttpParser<'a> {
 }
 
 impl<'a> HttpParser<'a> {
+    const CRLF_LEN: usize = 2;
     const READ_BUFFER_SIZE: usize = 1024;
     const RESPONSE_MAX_SIZE: usize = 100_000;
     pub fn new(stream: &'a mut TcpStream) -> Self {
@@ -63,6 +64,20 @@ impl<'a> HttpParser<'a> {
                 return Response::from_string(self.lines.clone());
             }
         }
+    }
+
+    // Call after reading the response, to add additional header
+    // Return the new request
+    pub fn add_header(self: &HttpParser<'a>, mut request: String, key: String, value: &String) -> String{
+        // Truncate the last 2 "\r\n" bytes
+        request.truncate(self.lines.len() - HttpParser::CRLF_LEN);
+        // Add the new key value to the header
+        let new_header = key + value;
+        request.push_str(&new_header);
+        // Add back CRLfF
+        request.push_str("\r\n");
+
+        request
     }
 
     pub fn read_bytes(self: &mut HttpParser<'a>) -> Result<Vec<u8>, Box<dyn Error>> {
