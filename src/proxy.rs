@@ -82,7 +82,7 @@ impl Proxy {
                 continue;
             }
             
-            let prefix_len = "max-age".len();
+            let prefix_len = "max-age=".len();
             match cache_directive[prefix_len..].parse::<u32>(){
                 Ok(expiry_time) => {return Some(expiry_time);},
                 Err(_) => {return None;}
@@ -161,7 +161,9 @@ impl Proxy {
             .get("cache-control") {
                 let word_list = self.cache_control_split(cache_control_val);
                 allow_cache = self.is_cache_allowed(&word_list);
-                expiry_time = self.get_cache_expire(&word_list);
+                if allow_cache {
+                    expiry_time = self.get_cache_expire(&word_list);
+                }
         };
 
         // forward header
