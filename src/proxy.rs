@@ -1,8 +1,9 @@
 use crate::http_parser::HttpParser;
-use crate::cache::Cache;
+use crate::cache::{CacheRecord, Cache};
 use std::error::Error;
 use std::io::Write;
 use std::net::{Shutdown, TcpListener, TcpStream};
+use std::option;
 
 
 pub struct Proxy {
@@ -110,6 +111,7 @@ impl Proxy {
         let host = request.get_host();
         let url = request.url.clone();
         let mut is_expired = false;
+        let mut option_cache_record: Option<CacheRecord> = None;
 
         if self.does_cache && request_lines.len() < 2000 {
             // check cache
@@ -130,6 +132,7 @@ impl Proxy {
                         request_lines = parser.add_header(request_lines, String::from("If-Modified-Since"), &cache_value.date);
                     }
                     
+                    option_cache_record = Some(cache_value);
                 }
             }
 
@@ -173,6 +176,20 @@ impl Proxy {
             return Err(Box::new(std::io::Error::new(std::io::ErrorKind::AddrNotAvailable, "No date in request")));
         };
         let date = date_ref.clone();
+
+        // Get status code for task 5
+        if self.does_cache && response.status_code == "304" {
+            if let Some(cache_value) = option_cache_record {
+                // use cache and log
+                println!("Serving {} {} from cache", host, request.url);
+                stream.write_all(cache_value.response.as_bytes())?;
+
+                println!("Entry for {} {} unmodified", host, request.url);
+                stream.shutdown(Shutdown::Both)?;
+                
+                return Ok(());
+            }
+        }
 
         // forward header
         stream.write_all(parser.lines.as_bytes())?;
