@@ -3,7 +3,6 @@ use crate::cache::{CacheRecord, Cache};
 use std::error::Error;
 use std::io::Write;
 use std::net::{Shutdown, TcpListener, TcpStream};
-use std::option;
 
 
 pub struct Proxy {
@@ -20,81 +19,8 @@ impl Proxy {
         }
     }
 
-    // Task 3:
-    fn is_cache_allowed_single(self: &Proxy, cache_header: &String) -> bool{
-        // TODO: Is "max-age=\"0\"" valid
-        !(cache_header == "private" 
-            || cache_header == "no-store"
-            || cache_header == "no-cache"
-            || cache_header == "max-age=0"
-            || cache_header == "must-validate"
-            || cache_header == "proxy-revalidate")
-    }
-
-    // Special parse for cache header: Split by comma, and treat quoted string 
-    // as 1 token
-    fn cache_control_split(self: &Proxy, cache_header: &String) -> Vec<String>{
-        let mut result = Vec::new();
-        let mut cur_str = String::new();
-        let mut is_quoted = false;
-        for c in cache_header.chars(){
-            // End the word if is not in quote and get comma
-            if !is_quoted && c == ',' {
-                result.push(cur_str.clone());
-                cur_str.clear();
-                continue;
-            }
-
-            // Skip space and htab if not in quoted
-            if !is_quoted && (c == ' ' || c == '\t'){
-                continue;
-            }  
-
-            // Start quote
-            if c == '"'{
-                is_quoted = !is_quoted;
-            }
-
-            cur_str.push(c);
-        }
-
-        // Add the end, if any
-        if cur_str.len() > 0 {
-            result.push(cur_str);
-        }
-        
-        result
-    }
-
-    fn is_cache_allowed(self: &Proxy, word_list: &Vec<String>) -> bool{
-        for word in word_list{
-            if !self.is_cache_allowed_single(word) {
-                return false;
-            }
-        }
-
-        true
-    }
-
-    // Task 4 helpers
-    fn get_cache_expire(self: &Proxy, cache_directive_list: &Vec<String>) -> Option<u32>{
-        for cache_directive in cache_directive_list {
-            if !cache_directive.contains("max-age=") {
-                continue;
-            }
-            
-            let prefix_len = "max-age=".len();
-            match cache_directive[prefix_len..].parse::<u32>(){
-                Ok(expiry_time) => {return Some(expiry_time);},
-                Err(_) => {return None;}
-            };
-        }
-
-        None
-    }
-
     fn handle_connection(self: &mut Proxy, mut stream: TcpStream) -> Result<(), Box<dyn Error>> {
-        // set socket params (Why?)
+        // TODO: Check set socket params (Why?)
         // No need for SO_REUSEADDR as set by default
         stream.set_nodelay(true)?;
         println!("Accepted");
@@ -102,6 +28,15 @@ impl Proxy {
         // get request
         let mut parser = HttpParser::new(&mut stream);
         let request = parser.read_request()?;
+
+        // Inject code to test the parser. TODO: Remove after set up proper web server
+        // if let Some(cache_control_val) = request
+        //     .headers
+        //     .get("cache-control") {
+        //         let (allow_cache_local, expiry_time_option) = parser.is_cache_allowed(&cache_control_val);
+        //         println!("Allow cache: {}", allow_cache_local);
+        //         println!("Expiry option: {:?}", expiry_time_option);
+        //     };
 
         let lines = parser.lines.split("\r\n").collect::<Vec<&str>>();
         println!("Request tail {}", lines[lines.len() - Self::TAIL_OFFSET]);
@@ -147,7 +82,22 @@ impl Proxy {
         // read server header
         let mut parser = HttpParser::new(&mut proxy);
         let response = parser.read_response_header()?;
+
+        // Get status code for task 5. If 304, return early.
+        if self.does_cache && response.status_code == "304" {
+            if let Some(cache_value) = option_cache_record {
+                // use cache and log
+                println!("Serving {} {} from cache", host, request.url);
+                stream.write_all(cache_value.response.as_bytes())?;
+
+                println!("Entry for {} {} unmodified", host, request.url);
+                stream.shutdown(Shutdown::Both)?;
+
+                return Ok(());
+            }
+        }
         
+        // Otherwise, proxy and cache (if applicable)
         // Get content length
         let content_length = response
             .headers
@@ -163,38 +113,25 @@ impl Proxy {
         if let Some(cache_control_val) = response
             .headers
             .get("cache-control") {
-                let word_list = self.cache_control_split(cache_control_val);
-                allow_cache = self.is_cache_allowed(&word_list);
+                let word_list = parser.cache_control_split(cache_control_val);
+                let allow_cache_local = self.cache.is_cache_allowed(&word_list);
+                allow_cache = allow_cache_local;
                 if allow_cache {
-                    expiry_time = self.get_cache_expire(&word_list);
+                    expiry_time = parser.get_cache_expire(&word_list);
                 }
         };
 
         // Get date
         let Some(date_ref) = response.headers.get("date")
         else {
-            return Err(Box::new(std::io::Error::new(std::io::ErrorKind::AddrNotAvailable, "No date in request")));
+            return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "No date in response")));
         };
         let date = date_ref.clone();
-
-        // Get status code for task 5
-        if self.does_cache && response.status_code == "304" {
-            if let Some(cache_value) = option_cache_record {
-                // use cache and log
-                println!("Serving {} {} from cache", host, request.url);
-                stream.write_all(cache_value.response.as_bytes())?;
-
-                println!("Entry for {} {} unmodified", host, request.url);
-                stream.shutdown(Shutdown::Both)?;
-                
-                return Ok(());
-            }
-        }
 
         // forward header
         stream.write_all(parser.lines.as_bytes())?;
 
-        // read and forward server response
+        // read and forward server response body
         let mut count = 0;
         while count < content_length {
             let bytes = parser.read_bytes()?;
@@ -207,6 +144,7 @@ impl Proxy {
         let response_lines = parser.lines;
 
         // If is_expired, remove from cache and load back
+        // Handle logging later on (to follow specs sequence)
         if is_expired {
             self.cache.remove_cache(&request_lines);
         }
@@ -228,7 +166,6 @@ impl Proxy {
             }
         } else {
             // If expired, and can't be cached, log evict
-            // Already removed while trying to get from cache
             if is_expired {
                 println!("Evicting {} {} from cache", host, url);
             }

@@ -37,17 +37,19 @@ impl Cache {
     }
 
     fn check_time_out(self: &Cache, time_now: &Instant, expiry: Option<u32>) -> bool {
+        // println!("Expiry: {:?}", expiry);
         let Some(expiry_secs) = expiry else {
             return false;
         };
 
         let elapsed_secs = time_now.elapsed().as_secs();
+        // println!("Elapsed secs: {}", elapsed_secs);
 
         if elapsed_secs > (expiry_secs as u64) {
-            return false;
+            return true;
         }
 
-        true
+        false
     }
 
     pub fn get_cached(self: &mut Cache, request: &String) -> Option<(Option<CacheRecord>, bool)> {
@@ -57,7 +59,8 @@ impl Cache {
         };
 
         let entry_ref = self.cache.get(request)?;
-
+        // println!("Checking time out");
+        // println!("Entry expiry: {:?}", entry_ref.expiry_secs);
         if self.check_time_out(&entry_ref.time_now, entry_ref.expiry_secs) {
             is_expired = true;
             return Some((Some(entry_ref.clone()), is_expired));
@@ -88,6 +91,32 @@ impl Cache {
     pub fn remove_cache(self: &mut Cache, request: &String){
         self.cache.remove(request);
         self.lru.remove_lru(request);
+    }
+
+    // Task 3: Handle cache-control directive checking
+    fn is_cache_allowed_single(self: &Cache, cache_header: &String) -> bool{
+        // TODO: Is "max-age=\"0\"" valid
+        !(cache_header == "private" 
+            || cache_header == "no-store"
+            || cache_header == "no-cache"
+            || cache_header == "max-age=0"
+            || cache_header == "must-validate"
+            || cache_header == "proxy-revalidate")
+    }
+
+    fn is_cache_allowed_list(self: &Cache, word_list: &Vec<String>) -> bool{
+        for word in word_list{
+            if !self.is_cache_allowed_single(word) {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    pub fn is_cache_allowed(self: &Cache, word_list: &Vec<String>) -> bool {
+        // println!("Split cache control: {:?}", word_list);
+        return self.is_cache_allowed_list(word_list);
     }
 
 }

@@ -8,6 +8,7 @@ pub struct Response {
 }
 
 impl Response {
+    const RESPONSE_FIRST_ITEMS: usize = 3;
     pub fn from_string(response: String) -> Result<Self, Box<dyn Error>> {
         let mut headers = HashMap::new();
         let mut first_line = true;
@@ -16,8 +17,9 @@ impl Response {
         for line in response.split("\r\n") {
             // First line is special
             if first_line {
+                // println!("First line for response str: {}", line);
                 let [_version, local_status_code, _status_msg] = &line
-                    .split(" ")
+                    .splitn(Self::RESPONSE_FIRST_ITEMS, " ")
                     .into_iter()
                     .map(String::from)
                     .collect::<Vec<String>>()[..]

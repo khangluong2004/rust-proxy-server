@@ -72,7 +72,7 @@ impl<'a> HttpParser<'a> {
         // Truncate the last 2 "\r\n" bytes
         request.truncate(self.lines.len() - HttpParser::CRLF_LEN);
         // Add the new key value to the header
-        let new_header = key + value;
+        let new_header = key + ": " + value + "\r\n";
         request.push_str(&new_header);
         // Add back CRLfF
         request.push_str("\r\n");
@@ -95,9 +95,87 @@ impl<'a> HttpParser<'a> {
         let bytes_read = self.stream.read(&mut buffer)?;
         buffer.resize(bytes_read, 0);
         
-        if self.lines.len() <= Self::RESPONSE_MAX_SIZE {
+        // No need to store if the length exceeds cache requirement.
+        // Max size reached would be 101,024 bytes, which is acceptable.
+        if self.lines.len() < Self::RESPONSE_MAX_SIZE {
             self.lines += &String::from_utf8(buffer.clone())?;
         }
         Ok(buffer)
     }
+
+    // Task 3: Cache-control parser helper functions
+
+    // Special parse for cache header: Split by comma, and treat quoted string 
+    // as 1 token
+    // Rules from RFC9110:
+    // Without quotation mark: "!" / "#" / "$" / "%" / "&" / "'" / "*"
+    //  / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
+    //  / DIGIT / ALPHA
+    // With quotation mark: Any character, except \" and \\
+    // If there is backlash, ignore all rules and treat next char as character
+    // Should only see backlash inside quotation mark
+    pub fn cache_control_split(self: &HttpParser<'a>, cache_header: &String) -> Vec<String>{
+        let mut result = Vec::new();
+        let mut cur_str = String::new();
+        let mut is_quoted = false;
+        let mut is_backlash = false;
+        for c in cache_header.chars(){
+            if !is_backlash {
+                // End the word if is not in quote and get comma
+                if !is_quoted && c == ',' {
+                    result.push(cur_str.clone());
+                    cur_str.clear();
+                    continue;
+                }
+
+                // Skip space and htab if not in quoted
+                if !is_quoted && (c == ' ' || c == '\t'){
+                    continue;
+                }  
+
+                // Start quote
+                if c == '"'{
+                    is_quoted = !is_quoted;
+                }
+
+                // Turn on backlash if is backlash
+                if is_quoted && c == '\\'{
+                    is_backlash = true;
+                }
+            }
+            
+            // Turn off backlash
+            if is_backlash {
+                is_backlash = false;
+            }
+
+            cur_str.push(c);
+        }
+
+        // Add the end, if any
+        if cur_str.len() > 0 {
+            result.push(cur_str);
+        }
+        
+        result
+    }
+
+    // Task 4 helpers: Extract expiry time from directive
+    pub fn get_cache_expire(self: &HttpParser<'a>, cache_directive_list: &Vec<String>) -> Option<u32>{
+        for cache_directive in cache_directive_list {
+            if !cache_directive.contains("max-age=") {
+                continue;
+            }
+            
+            let prefix_len = "max-age=".len();
+            match cache_directive[prefix_len..].parse::<u32>(){
+                Ok(expiry_time) => {return Some(expiry_time);},
+                Err(_) => {return None;}
+            };
+        }
+
+        None
+    }
+
+    
 }
