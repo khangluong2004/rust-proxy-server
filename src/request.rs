@@ -25,8 +25,7 @@ impl Request {
             .map(String::from)
             .collect::<Vec<String>>()[..]
         else {
-            // TODO: fix this panic
-            panic!("invalid header");
+            return Err(Box::new(std::io::Error::new(std::io::ErrorKind::Unsupported, "Error in parsing request first line")));
         };
 
         for line in request.split("\r\n").skip(1) {
