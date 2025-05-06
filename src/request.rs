@@ -25,7 +25,7 @@ impl Request {
             .map(String::from)
             .collect::<Vec<String>>()[..]
         else {
-            return Err(Box::new(std::io::Error::new(std::io::ErrorKind::Unsupported, "Error in parsing request first line")));
+            return Err("Error in parsing request first line".into());
         };
 
         for line in request.split("\r\n").skip(1) {
