@@ -3,9 +3,7 @@ use std::error::Error;
 
 #[derive(Clone)]
 pub struct Request {
-    // pub method: String,
     pub url: String,
-    // pub format: String,
     pub headers: HashMap<String, String>,
 }
 
@@ -42,9 +40,7 @@ impl Request {
         }
 
         Ok(Request {
-            // method: method.clone(),
             url: url.clone(),
-            // format: format.clone(),
             headers,
         })
     }

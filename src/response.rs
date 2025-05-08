@@ -24,13 +24,15 @@ impl Response {
                     .map(String::from)
                     .collect::<Vec<String>>()[..]
                 else {
-                    return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "Can't find status code")));
+                    return Err(Box::new(std::io::Error::new(
+                        std::io::ErrorKind::NotFound,
+                        "Can't find status code",
+                    )));
                 };
                 status_code = Some(local_status_code.clone());
                 first_line = false;
                 continue;
             }
-
 
             if line == "" {
                 break;
@@ -45,10 +47,15 @@ impl Response {
         }
 
         if let Some(status_code_val) = status_code {
-            return Ok(Response {headers, status_code: status_code_val });
+            return Ok(Response {
+                headers,
+                status_code: status_code_val,
+            });
         };
-        
-        return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "Error in status code parsing")));
-        
+
+        return Err(Box::new(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "Error in status code parsing",
+        )));
     }
 }

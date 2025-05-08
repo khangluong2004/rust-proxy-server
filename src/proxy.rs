@@ -1,9 +1,8 @@
+use crate::cache::{Cache, CacheRecord};
 use crate::http_parser::HttpParser;
-use crate::cache::{CacheRecord, Cache};
 use std::error::Error;
 use std::io::Write;
 use std::net::{Shutdown, TcpListener, TcpStream};
-
 
 pub struct Proxy {
     does_cache: bool,
@@ -38,7 +37,6 @@ impl Proxy {
         let lines = request_headers.split("\r\n").collect::<Vec<&str>>();
         println!("Request tail {}", lines[lines.len() - Self::TAIL_OFFSET]);
 
-
         let request_host = request.get_host();
         let request_url = request.url.clone();
         let mut is_expired = false;
@@ -59,7 +57,11 @@ impl Proxy {
                     // Logging for task 4
                     println!("Stale entry for {} {}", request_host, request_url);
                     // Modify the request_lines for task 5
-                    request_headers = HttpParser::append_header(request_headers, &(Self::IF_MODIFIED_SINCE_HEADER.into()), &cache_value.date);
+                    request_headers = HttpParser::append_header(
+                        request_headers,
+                        &(Self::IF_MODIFIED_SINCE_HEADER.into()),
+                        &cache_value.date,
+                    );
                 }
 
                 option_cache_record = Some(cache_value);
@@ -105,19 +107,21 @@ impl Proxy {
         // Get cache-control
         let mut allow_cache = true;
         let mut expiry_time = None;
-        if let Some(cache_control_val) = response
-            .headers
-            .get("cache-control") {
-                let word_list = HttpParser::cache_control_split(cache_control_val);
-                let allow_cache_local = self.cache.is_cache_allowed(&word_list);
-                allow_cache = allow_cache_local;
-                if allow_cache {
-                    expiry_time = HttpParser::get_cache_expire(&word_list);
-                }
+        if let Some(cache_control_val) = response.headers.get("cache-control") {
+            let word_list = HttpParser::cache_control_split(cache_control_val);
+            let allow_cache_local = self.cache.is_cache_allowed(&word_list);
+            allow_cache = allow_cache_local;
+            if allow_cache {
+                expiry_time = HttpParser::get_cache_expire(&word_list);
+            }
         };
 
         // Get date
-        let date = response.headers.get("date").ok_or::<Box<dyn Error>>("no date in response".into())?.clone();
+        let date = response
+            .headers
+            .get("date")
+            .ok_or::<Box<dyn Error>>("no date in response".into())?
+            .clone();
 
         // forward header
         stream.write_all(&response_parser.data())?;
@@ -138,24 +142,44 @@ impl Proxy {
         // }
 
         let response_data = response_parser.data();
-        if self.does_cache && request_headers.len() < Self::REQUEST_CACHE_LENGTH && response_data.len() < Self::RESPONSE_CACHE_LENGTH {
+        if self.does_cache
+            && request_headers.len() < Self::REQUEST_CACHE_LENGTH
+            && response_data.len() < Self::RESPONSE_CACHE_LENGTH
+        {
             if !allow_cache {
                 println!("Not caching {} {}", request_host, request_url);
                 if is_expired {
                     let record = self.cache.remove_cache(&request_headers);
-                    println!("Evicting {} {} from cache", record.request.get_host(), record.request.url);
+                    println!(
+                        "Evicting {} {} from cache",
+                        record.request.get_host(),
+                        record.request.url
+                    );
                 }
-                
             } else {
                 if is_expired {
                     let record = self.cache.remove_cache(&request_headers);
-                    println!("Evicting {} {} from cache", record.request.get_host(), record.request.url);
+                    println!(
+                        "Evicting {} {} from cache",
+                        record.request.get_host(),
+                        record.request.url
+                    );
                 }
-                
+
                 // cache response
-                let record = self.cache.add_cache(request_headers.clone(), request, response_data, expiry_time, date);
+                let record = self.cache.add_cache(
+                    request_headers.clone(),
+                    request,
+                    response_data,
+                    expiry_time,
+                    date,
+                );
                 if let Some(record) = record {
-                    println!("Evicting {} {} from cache", record.request.get_host(), record.request.url);
+                    println!(
+                        "Evicting {} {} from cache",
+                        record.request.get_host(),
+                        record.request.url
+                    );
                 }
             }
         }

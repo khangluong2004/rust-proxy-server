@@ -1,7 +1,7 @@
 use crate::lru_queue::LruQueue;
+use crate::request::Request;
 use std::collections::HashMap;
 use std::time::Instant;
-use crate::request::Request;
 
 #[derive(Clone)]
 pub struct CacheRecord {
@@ -74,7 +74,7 @@ impl Cache {
         Some((entry_ref.clone(), false))
     }
 
-    // Adds 
+    // Adds
     pub fn add_cache(
         self: &mut Cache,
         request_data: String,
@@ -84,7 +84,7 @@ impl Cache {
         date: String,
     ) -> Option<CacheRecord> {
         let mut evicted = None;
-        
+
         // evict if full
         if self.cache.len() == Self::CACHE_MAX {
             // remove lru
@@ -95,12 +95,14 @@ impl Cache {
 
         let time_now = Instant::now();
         self.lru.add_lru(&request_data);
-        self.cache
-            .insert(request_data, CacheRecord::new(request, response_data, time_now, expiry, date));
-        
+        self.cache.insert(
+            request_data,
+            CacheRecord::new(request, response_data, time_now, expiry, date),
+        );
+
         evicted
     }
-    
+
     pub fn remove_cache(self: &mut Cache, request: &String) -> CacheRecord {
         self.lru.evict_lru_by_value(request);
         let record = self.cache.get(request).unwrap().clone();
