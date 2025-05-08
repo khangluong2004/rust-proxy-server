@@ -123,7 +123,6 @@ impl<'a> HttpParser<'a> {
     }
 
     // Task 3: Cache-control parser helper functions
-
     // Special parse for cache header: Split by comma, and treat quoted string
     // as 1 token
     // Rules from RFC9110:
@@ -133,51 +132,49 @@ impl<'a> HttpParser<'a> {
     // With quotation mark: Any character, except \" and \\
     // If there is backlash, ignore all rules and treat next char as character
     // Should only see backlash inside quotation mark
-    pub fn cache_control_split(cache_header: &String) -> Vec<String> {
-        let mut result = Vec::new();
-        let mut cur_str = String::new();
+    fn cache_control_split(cache_header: &String) -> Vec<String> {
+        let mut result = vec![];
+        let mut current = "".to_string();
+
+        let mut ptr = 0;
         let mut is_quoted = false;
-        let mut is_backlash = false;
-        for c in cache_header.chars() {
-            if !is_backlash {
-                // End the word if is not in quote and get comma
-                if !is_quoted && c == ',' {
-                    result.push(cur_str.clone());
-                    cur_str.clear();
-                    continue;
+        let text = cache_header.as_bytes();
+        while ptr < text.len() {
+            let c = char::from(text[ptr]);
+            let c_str = c.to_string();
+            match (is_quoted, c) {
+                (true, '"') => {
+                    is_quoted = false;
+                    current += &c_str;
                 }
-
-                // Skip space and htab if not in quoted
-                if !is_quoted && (c == ' ' || c == '\t') {
-                    continue;
+                (true, '\\') => {
+                    ptr += 1;
+                    current += &text[ptr].to_string();
                 }
-
-                // Start quote
-                if c == '"' {
-                    is_quoted = !is_quoted;
+                (false, '"') => {
+                    is_quoted = true;
+                    current += &c_str;
                 }
-
-                // Turn on backlash if is backlash
-                if is_quoted && c == '\\' {
-                    is_backlash = true;
+                (false, ',') => {
+                    result.push(current);
+                    current = "".to_string();
+                }
+                _ => {
+                    current += &c_str;
                 }
             }
 
-            // Turn off backlash
-            if is_backlash {
-                is_backlash = false;
-            }
-
-            cur_str.push(c);
+            ptr += 1;
         }
 
-        // Add the end, if any
-        if cur_str.len() > 0 {
-            result.push(cur_str);
+        if !current.is_empty() {
+            result.push(current);
         }
 
         result
     }
+    
+    pub fn parse_cache_control 
 
     // Task 4 helpers: Extract expiry time from directive
     pub fn get_cache_expire(cache_directive_list: &Vec<String>) -> Option<u32> {

@@ -110,29 +110,29 @@ impl Cache {
         record
     }
 
-    // Task 3: Handle cache-control directive checking
-    fn is_cache_allowed_single(self: &Cache, cache_header: &String) -> bool {
-        // TODO: Is "max-age=\"0\"" valid
-        !(cache_header == "private"
-            || cache_header == "no-store"
-            || cache_header == "no-cache"
-            || cache_header == "max-age=0"
-            || cache_header == "must-validate"
-            || cache_header == "proxy-revalidate")
-    }
-
-    fn is_cache_allowed_list(self: &Cache, word_list: &Vec<String>) -> bool {
-        for word in word_list {
-            if !self.is_cache_allowed_single(word) {
-                return false;
-            }
-        }
-
-        true
-    }
-
-    pub fn is_cache_allowed(self: &Cache, word_list: &Vec<String>) -> bool {
-        // println!("Split cache control: {:?}", word_list);
-        return self.is_cache_allowed_list(word_list);
-    }
+    // // Task 3: Handle cache-control directive checking
+    // fn is_cache_allowed_single(self: &Cache, cache_header: &String) -> bool {
+    //     // TODO: Is "max-age=\"0\"" valid
+    //     !(cache_header == "private"
+    //         || cache_header == "no-store"
+    //         || cache_header == "no-cache"
+    //         || cache_header == "max-age=0"
+    //         || cache_header == "must-revalidate"
+    //         || cache_header == "proxy-revalidate")
+    // }
+    // 
+    // fn is_cache_allowed_list(self: &Cache, word_list: &Vec<String>) -> bool {
+    //     for word in word_list {
+    //         if !self.is_cache_allowed_single(word) {
+    //             return false;
+    //         }
+    //     }
+    // 
+    //     true
+    // }
+    // 
+    // pub fn is_cache_allowed(self: &Cache, word_list: &Vec<String>) -> bool {
+    //     // println!("Split cache control: {:?}", word_list);
+    //     return self.is_cache_allowed_list(word_list);
+    // }
 }

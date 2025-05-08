@@ -15,6 +15,14 @@ impl Proxy {
     const RESPONSE_CACHE_LENGTH: usize = 100_000;
     const IF_MODIFIED_SINCE_HEADER: &'static str = "If-Modified-Since";
     const CONTENT_LENGTH_HEADER: &'static str = "content-length";
+    const CACHE_DISALLOWED_ENTRIES: [&'static str; 6] = [
+        "private",
+        "no-store",
+        "no-cache",
+        "max-age",
+        "must-revalidate",
+        "proxy-revalidate",
+    ];
 
     pub fn new(does_cache: bool) -> Self {
         Self {
@@ -109,6 +117,9 @@ impl Proxy {
         let mut expiry_time = None;
         if let Some(cache_control_val) = response.headers.get("cache-control") {
             let word_list = HttpParser::cache_control_split(cache_control_val);
+            for word in word_list {
+                if word.
+            }
             let allow_cache_local = self.cache.is_cache_allowed(&word_list);
             allow_cache = allow_cache_local;
             if allow_cache {
