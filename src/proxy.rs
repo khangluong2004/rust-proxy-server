@@ -141,6 +141,11 @@ impl Proxy {
         if self.does_cache && request_headers.len() < Self::REQUEST_CACHE_LENGTH && response_data.len() < Self::RESPONSE_CACHE_LENGTH {
             if !allow_cache {
                 println!("Not caching {} {}", request_host, request_url);
+                if is_expired {
+                    let record = self.cache.remove_cache(&request_headers);
+                    println!("Evicting {} {} from cache", record.request.get_host(), record.request.url);
+                }
+                
             } else {
                 if is_expired {
                     let record = self.cache.remove_cache(&request_headers);
