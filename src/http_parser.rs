@@ -92,26 +92,6 @@ impl<'a> HttpParser<'a> {
         }
     }
 
-    // Call after reading the response, to add additional header
-    // Return the new request
-    pub fn add_header(
-        self: &HttpParser<'a>,
-        mut request: String,
-        key: String,
-        value: &String,
-    ) -> String {
-        // Truncate the last 2 "\r\n" bytes
-        // TODO: implement this
-        // request.truncate(self.lines.len() - HttpParser::CRLF_LEN);
-        // // Add the new key value to the header
-        // let new_header = key + ": " + value + "\r\n";
-        // request.push_str(&new_header);
-        // // Add back CRLfF
-        // request.push_str("\r\n");
-
-        request
-    }
-
     // Read a series of bytes
     pub fn read_bytes(self: &mut HttpParser<'a>) -> Result<Vec<u8>, Box<dyn Error>> {
         // Read the remaining after reading the header
