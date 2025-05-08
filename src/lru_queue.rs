@@ -34,10 +34,9 @@ where
         None
     }
 
-    // Remove from lru by element value
-    pub fn remove_lru(self: &mut LruQueue<T>, remove_element: &T) {
-        if let Some(position) = self.queue.iter().position(|elem| elem == remove_element) {
-            self.queue.remove(position);
-        }
+    pub fn evict_lru_by_value(self: &mut LruQueue<T>, value: &T) -> Option<T> {
+        let position = self.queue.iter().position(|x| x == value)?;
+        let result = self.queue.remove(position);
+        Some(result)
     }
 }

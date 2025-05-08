@@ -39,10 +39,8 @@ impl Proxy {
         println!("Request tail {}", lines[lines.len() - Self::TAIL_OFFSET]);
 
 
-
-        let original_request_lines = request_headers.clone();
-        let host = request.get_host();
-        let url = request.url.clone();
+        let request_host = request.get_host();
+        let request_url = request.url.clone();
         let mut is_expired = false;
         let mut option_cache_record: Option<CacheRecord> = None;
 
@@ -53,13 +51,13 @@ impl Proxy {
 
                 if !is_expired {
                     // use cache
-                    println!("Serving {} {} from cache", host, request.url);
+                    println!("Serving {} {} from cache", request_host, request_url);
                     stream.write_all(&cache_value.response)?;
                     stream.shutdown(Shutdown::Both)?;
                     return Ok(());
                 } else {
                     // Logging for task 4
-                    println!("Stale entry for {} {}", host, url);
+                    println!("Stale entry for {} {}", request_host, request_url);
                     // Modify the request_lines for task 5
                     request_headers = HttpParser::append_header(request_headers, &(Self::IF_MODIFIED_SINCE_HEADER.into()), &cache_value.date);
                 }
@@ -68,10 +66,10 @@ impl Proxy {
             }
         }
 
-        println!("GETting {} {}", host, url);
+        println!("GETting {} {}", request_host, request_url);
 
         // create remote server socket and forward request
-        let mut proxy = TcpStream::connect(format!("{}:80", host))?;
+        let mut proxy = TcpStream::connect(format!("{}:80", request_host))?;
         proxy.write(&request_data)?;
 
         // read server header
@@ -82,10 +80,13 @@ impl Proxy {
         if self.does_cache && response.status_code == "304" {
             if let Some(cache_value) = option_cache_record {
                 // use cache and log
-                println!("Serving {} {} from cache", host, request.url);
+                println!("Serving {} {} from cache", request_host, request.url);
                 stream.write_all(&cache_value.response)?;
 
-                println!("Entry for {} {} unmodified", host, request.url);
+                if is_expired {
+                    println!("Entry for {} {} unmodified", request_host, request.url);
+                }
+
                 stream.shutdown(Shutdown::Both)?;
 
                 return Ok(());
@@ -130,34 +131,35 @@ impl Proxy {
         }
         stream.shutdown(Shutdown::Both)?;
 
-        // If is_expired, remove from cache and load back
-        // Handle logging later on (to follow specs sequence)
-        if is_expired {
-            self.cache.remove_cache(&request_headers);
-        }
+        // // If is_expired, remove from cache and load back
+        // // Handle logging later on (to follow specs sequence)
+        // if is_expired {
+        //     self.cache.remove_cache(&request_headers);
+        // }
 
         let response_data = response_parser.data();
         if self.does_cache && request_headers.len() < Self::REQUEST_CACHE_LENGTH && response_data.len() < Self::RESPONSE_CACHE_LENGTH {
             if !allow_cache {
-                println!("Not caching {} {}", host, url);
-
-                // Cacheable, but not allowed to cache
-                if is_expired {
-                    println!("Evicting {} {} from cache", host, url);
-                }
+                println!("Not caching {} {}", request_host, request_url);
             } else {
-                // cache response
-                let is_evicted = self.cache.add_cache(original_request_lines, response_data, expiry_time, date);
-                if is_evicted {
-                    println!("Evicting {} {} from cache", host, url);
+                if is_expired {
+                    let record = self.cache.remove_cache(&request_headers);
+                    println!("Evicting {} {} from cache", record.request.get_host(), record.request.url);
                 }
-            }
-        } else {
-            // If expired, and can't be cached, log evict
-            if is_expired {
-                println!("Evicting {} {} from cache", host, url);
+                
+                // cache response
+                let record = self.cache.add_cache(request_headers.clone(), request, response_data, expiry_time, date);
+                if let Some(record) = record {
+                    println!("Evicting {} {} from cache", record.request.get_host(), record.request.url);
+                }
             }
         }
+        // else {
+        //     // If expired, and can't be cached, log evict
+        //     if is_expired {
+        //         println!("Evicting {} {} from cache", host, url);
+        //     }
+        // }
 
         // Close the server connection as well
         proxy.shutdown(Shutdown::Both)?;

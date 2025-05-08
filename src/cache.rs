@@ -1,9 +1,11 @@
 use crate::lru_queue::LruQueue;
 use std::collections::HashMap;
 use std::time::Instant;
+use crate::request::Request;
 
 #[derive(Clone)]
 pub struct CacheRecord {
+    pub request: Request,
     pub response: Vec<u8>,
     pub time_now: Instant,
     pub expiry_secs: Option<u32>,
@@ -13,12 +15,14 @@ pub struct CacheRecord {
 impl CacheRecord {
     // Assume all response have Date, following specs
     pub fn new(
+        request: Request,
         response: Vec<u8>,
         time_now: Instant,
         expiry_secs: Option<u32>,
         date: String,
     ) -> Self {
         Self {
+            request,
             response,
             time_now,
             expiry_secs,
@@ -60,7 +64,6 @@ impl Cache {
 
     // Returns (entry, is_expired) from the cache given the request, none if the cache doesn't exist
     pub fn get(self: &mut Cache, request: &String) -> Option<(CacheRecord, bool)> {
-        let mut is_expired = false;
         let entry_ref = self.cache.get(request)?;
         if self.check_time_out(&entry_ref.time_now, entry_ref.expiry_secs) {
             return Some((entry_ref.clone(), true));
@@ -71,32 +74,38 @@ impl Cache {
         Some((entry_ref.clone(), false))
     }
 
+    // Adds 
     pub fn add_cache(
         self: &mut Cache,
-        req: String,
-        res: Vec<u8>,
+        request_data: String,
+        request: Request,
+        response_data: Vec<u8>,
         expiry: Option<u32>,
         date: String,
-    ) -> bool {
+    ) -> Option<CacheRecord> {
+        let mut evicted = None;
+        
         // evict if full
-        let mut is_evicted = false;
         if self.cache.len() == Self::CACHE_MAX {
-            if let Some(evict_elem) = self.lru.evict_lru() {
-                self.cache.remove(&evict_elem);
-                is_evicted = true;
-            };
+            // remove lru
+            let evicted_key = self.lru.evict_lru().unwrap();
+            evicted = Some(self.cache.get(&evicted_key).unwrap().clone());
+            self.cache.remove(&evicted_key);
         }
 
         let time_now = Instant::now();
-        self.lru.add_lru(&req);
+        self.lru.add_lru(&request_data);
         self.cache
-            .insert(req, CacheRecord::new(res, time_now, expiry, date));
-
-        is_evicted
+            .insert(request_data, CacheRecord::new(request, response_data, time_now, expiry, date));
+        
+        evicted
     }
-    pub fn remove_cache(self: &mut Cache, request: &String) {
+    
+    pub fn remove_cache(self: &mut Cache, request: &String) -> CacheRecord {
+        self.lru.evict_lru_by_value(request);
+        let record = self.cache.get(request).unwrap().clone();
         self.cache.remove(request);
-        self.lru.remove_lru(request);
+        record
     }
 
     // Task 3: Handle cache-control directive checking
