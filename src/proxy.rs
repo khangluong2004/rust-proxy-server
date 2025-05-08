@@ -12,6 +12,11 @@ pub struct Proxy {
 
 impl Proxy {
     const TAIL_OFFSET: usize = 3;
+    const REQUEST_CACHE_LENGTH: usize = 2000;
+    const RESPONSE_CACHE_LENGTH: usize = 100_000;
+    const IF_MODIFIED_SINCE_HEADER: &'static str = "If-Modified-Since";
+    const CONTENT_LENGTH_HEADER: &'static str = "content-length";
+
     pub fn new(does_cache: bool) -> Self {
         Self {
             does_cache,
@@ -26,69 +31,59 @@ impl Proxy {
         println!("Accepted");
 
         // get request
-        let mut parser = HttpParser::new(&mut stream);
-        let request = parser.read_request()?;
-
-        // Inject code to test the parser. TODO: Remove after set up proper web server
-        // if let Some(cache_control_val) = request
-        //     .headers
-        //     .get("cache-control") {
-        //         let (allow_cache_local, expiry_time_option) = parser.is_cache_allowed(&cache_control_val);
-        //         println!("Allow cache: {}", allow_cache_local);
-        //         println!("Expiry option: {:?}", expiry_time_option);
-        //     };
-
-        let lines = parser.lines.split("\r\n").collect::<Vec<&str>>();
+        let mut request_parser = HttpParser::new(&mut stream);
+        let request = request_parser.read_request()?;
+        let mut request_headers = request_parser.header_lines()?;
+        let request_data = request_parser.data();
+        let lines = request_headers.split("\r\n").collect::<Vec<&str>>();
         println!("Request tail {}", lines[lines.len() - Self::TAIL_OFFSET]);
 
-        let original_request_lines = parser.lines.clone();
-        let mut request_lines = parser.lines.clone();
+
+
+        let original_request_lines = request_headers.clone();
         let host = request.get_host();
         let url = request.url.clone();
         let mut is_expired = false;
         let mut option_cache_record: Option<CacheRecord> = None;
 
-        if self.does_cache && request_lines.len() < 2000 {
+        if self.does_cache && request_data.len() < Self::REQUEST_CACHE_LENGTH {
             // check cache
-            if let Some((option_string, local_is_expired)) = self.cache.get_cached(&request_lines) {
+            if let Some((cache_value, local_is_expired)) = self.cache.get(&request_headers) {
                 is_expired = local_is_expired;
 
-                if let Some(cache_value) = option_string {
-                    if !is_expired {
-                        // use cache
-                        println!("Serving {} {} from cache", host, request.url);
-                        stream.write_all(cache_value.response.as_bytes())?;
-                        stream.shutdown(Shutdown::Both)?;
-                        return Ok(());
-                    } else {
-                        // Logging for task 4
-                        println!("Stale entry for {} {}", host, url);
-                        // Modify the request_lines for task 5
-                        request_lines = parser.add_header(request_lines, String::from("If-Modified-Since"), &cache_value.date);
-                    }
-                    
-                    option_cache_record = Some(cache_value);
+                if !is_expired {
+                    // use cache
+                    println!("Serving {} {} from cache", host, request.url);
+                    stream.write_all(&cache_value.response)?;
+                    stream.shutdown(Shutdown::Both)?;
+                    return Ok(());
+                } else {
+                    // Logging for task 4
+                    println!("Stale entry for {} {}", host, url);
+                    // Modify the request_lines for task 5
+                    request_headers = HttpParser::append_header(request_headers, &(Self::IF_MODIFIED_SINCE_HEADER.into()), &cache_value.date);
                 }
-            }
 
+                option_cache_record = Some(cache_value);
+            }
         }
 
         println!("GETting {} {}", host, url);
 
         // create remote server socket and forward request
         let mut proxy = TcpStream::connect(format!("{}:80", host))?;
-        proxy.write(request_lines.as_bytes())?;
+        proxy.write(&request_data)?;
 
         // read server header
-        let mut parser = HttpParser::new(&mut proxy);
-        let response = parser.read_response_header()?;
+        let mut response_parser = HttpParser::new(&mut proxy);
+        let response = response_parser.read_response_header()?;
 
         // Get status code for task 5. If 304, return early.
         if self.does_cache && response.status_code == "304" {
             if let Some(cache_value) = option_cache_record {
                 // use cache and log
                 println!("Serving {} {} from cache", host, request.url);
-                stream.write_all(cache_value.response.as_bytes())?;
+                stream.write_all(&cache_value.response)?;
 
                 println!("Entry for {} {} unmodified", host, request.url);
                 stream.shutdown(Shutdown::Both)?;
@@ -96,16 +91,15 @@ impl Proxy {
                 return Ok(());
             }
         }
-        
+
         // Otherwise, proxy and cache (if applicable)
         // Get content length
         let content_length = response
             .headers
-            .get("content-length")
-            .unwrap_or(&"0".to_string())
+            .get(Self::CONTENT_LENGTH_HEADER)
+            .ok_or("expected a content length in the response")?
             .parse::<usize>()?;
         println!("Response body length {}", content_length);
-
 
         // Get cache-control
         let mut allow_cache = true;
@@ -113,53 +107,47 @@ impl Proxy {
         if let Some(cache_control_val) = response
             .headers
             .get("cache-control") {
-                let word_list = parser.cache_control_split(cache_control_val);
+                let word_list = HttpParser::cache_control_split(cache_control_val);
                 let allow_cache_local = self.cache.is_cache_allowed(&word_list);
                 allow_cache = allow_cache_local;
                 if allow_cache {
-                    expiry_time = parser.get_cache_expire(&word_list);
+                    expiry_time = HttpParser::get_cache_expire(&word_list);
                 }
         };
 
         // Get date
-        let Some(date_ref) = response.headers.get("date")
-        else {
-            return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "No date in response")));
-        };
-        let date = date_ref.clone();
+        let date = response.headers.get("date").ok_or::<Box<dyn Error>>("no date in response".into())?.clone();
 
         // forward header
-        stream.write_all(parser.lines.as_bytes())?;
+        stream.write_all(&response_parser.data())?;
 
         // read and forward server response body
         let mut count = 0;
         while count < content_length {
-            let bytes = parser.read_bytes()?;
+            let bytes = response_parser.read_bytes()?;
             stream.write_all(&bytes)?;
             count += bytes.len();
         }
-
         stream.shutdown(Shutdown::Both)?;
-
-        let response_lines = parser.lines;
 
         // If is_expired, remove from cache and load back
         // Handle logging later on (to follow specs sequence)
         if is_expired {
-            self.cache.remove_cache(&request_lines);
+            self.cache.remove_cache(&request_headers);
         }
 
-        if self.does_cache && request_lines.len() < 2000 && response_lines.len() < 100_000 {
+        let response_data = response_parser.data();
+        if self.does_cache && request_headers.len() < Self::REQUEST_CACHE_LENGTH && response_data.len() < Self::RESPONSE_CACHE_LENGTH {
             if !allow_cache {
                 println!("Not caching {} {}", host, url);
-                
+
                 // Cacheable, but not allowed to cache
                 if is_expired {
                     println!("Evicting {} {} from cache", host, url);
                 }
             } else {
                 // cache response
-                let is_evicted = self.cache.add_cache(original_request_lines, response_lines, expiry_time, date);
+                let is_evicted = self.cache.add_cache(original_request_lines, response_data, expiry_time, date);
                 if is_evicted {
                     println!("Evicting {} {} from cache", host, url);
                 }

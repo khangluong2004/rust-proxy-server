@@ -10,6 +10,7 @@ sock, addr = server.accept()
 
 # take request
 req = sock.recv(4096*4)
+print("bytes", req)
 
 # send response
 sock.send(b"HTTP/1.1 200 OK\r\n")
