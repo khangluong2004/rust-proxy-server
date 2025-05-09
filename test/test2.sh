@@ -268,8 +268,8 @@ mkdir -p task2
 mkdir -p task3
 mkdir -p task4
 
-#test_task1
-#test_task2
-#test_task3
+test_task1
+test_task2
+test_task3
 test_task4
 echo "Done"

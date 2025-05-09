@@ -14,7 +14,7 @@ pub struct Proxy {
 impl Proxy {
     const TAIL_OFFSET: usize = 3;
     const REQUEST_CACHE_LENGTH: usize = 2000;
-    const RESPONSE_CACHE_LENGTH: usize = 100_000;
+    const RESPONSE_CACHE_LENGTH: usize = 100 * 1024;
 
     pub fn new(does_cache: bool) -> Self {
         Self {
@@ -153,7 +153,7 @@ impl Proxy {
         let response_data = response_parser.data();
         if self.does_cache
             && request_headers.len() < Self::REQUEST_CACHE_LENGTH
-            && response_data.len() < Self::RESPONSE_CACHE_LENGTH
+            && response_data.len() <= Self::RESPONSE_CACHE_LENGTH
         {
             if !allow_cache {
                 println!("Not caching {} {}", request_host, request_url);
