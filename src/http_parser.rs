@@ -20,7 +20,6 @@ impl<'a> HttpParser<'a> {
     pub const CRLF_BYTES: &'static [u8] = "\r\n".as_bytes();
     pub const CRLF_LEN: usize = Self::CRLF.len();
     const READ_BUFFER_SIZE: usize = 1024;
-    const RESPONSE_MAX_SIZE: usize = 100_000;
 
     pub fn new(stream: &'a mut TcpStream) -> Self {
         HttpParser {
@@ -93,7 +92,7 @@ impl<'a> HttpParser<'a> {
     }
 
     // Read a series of bytes
-    pub fn read_bytes(self: &mut HttpParser<'a>) -> Result<Vec<u8>, Box<dyn Error>> {
+    pub fn read_bytes(self: &mut HttpParser<'a>, max_size: usize) -> Result<Vec<u8>, Box<dyn Error>> {
         // Read the remaining after reading the header
         // Note, since buffer is shrunk to its exact length, no need to truncate
         // bunch of zeros
@@ -109,8 +108,8 @@ impl<'a> HttpParser<'a> {
         buffer.resize(bytes_read, 0);
 
         // No need to store if the length exceeds cache requirement.
-        // Max size reached would be 101,024 bytes, which is acceptable.
-        if self.data.len() < Self::RESPONSE_MAX_SIZE {
+        // Max size reached would be 100kib + 1,024b, which is acceptable.
+        if self.data.len() <= max_size {
             self.data.extend_from_slice(&buffer);
         }
         Ok(buffer)

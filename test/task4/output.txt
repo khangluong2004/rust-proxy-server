@@ -58,7 +58,7 @@ Accepted
 Request tail Accept: */*
 Stale entry for localhost /stale_no_cache_long_response
 GETting localhost /stale_no_cache_long_response
-Response body length 100001
+Response body length 102401
 Evicting localhost /stale_no_cache_long_response from cache
 Accepted
 Request tail Accept: */*

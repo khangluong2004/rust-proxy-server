@@ -29,7 +29,7 @@ while True:
 	i = (i + 1) % len(samples)
 
 	if text == "long":
-		sock.send(b"Content-Length: 100001\r\n")
+		sock.send(b"Content-Length: 102401\r\n")
 	else:
 		sock.send(b"Content-Length: 12\r\n")
 
@@ -39,7 +39,7 @@ while True:
 	sock.send(b"Cache-Control: " + bytes(text.encode('ascii')) +b"\r\n")
 	sock.send(b"\r\n")
 	if text == "long":
-		sock.send(bytes(('0'*100001).encode('ascii')))
+		sock.send(bytes(('0'*(102401)).encode('ascii')))
 	else:
 		sock.send(b"Hello World!")
 

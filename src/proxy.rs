@@ -133,7 +133,7 @@ impl Proxy {
         // read and forward server response body
         let mut count = 0;
         while count < content_length {
-            let bytes = response_parser.read_bytes()?;
+            let bytes = response_parser.read_bytes(Self::RESPONSE_CACHE_LENGTH)?;
             stream.write_all(&bytes)?;
             count += bytes.len();
         }
