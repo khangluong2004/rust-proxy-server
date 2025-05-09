@@ -236,14 +236,24 @@ test_task4() {
   # cached
   curl -vs -H "host: localhost" 0.0.0.0:8001/stale_no_cache_test 2>&1 | less >>task4/curl.txt
   sleep 6
-
   # evict stale, also no cache hit
   curl -vs -H "host: localhost" 0.0.0.0:8001/stale_no_cache_test 2>&1 | less >>task4/curl.txt
-
   # no cache hit, but caching
   curl -vs -H "host: localhost" 0.0.0.0:8001/stale_no_cache_test 2>&1 | less >>task4/curl.txt
   # cache hit
   curl -vs -H "host: localhost" 0.0.0.0:8001/stale_no_cache_test 2>&1 | less >>task4/curl.txt
+
+  # cached with age=5
+  curl -vs -H "host: localhost" 0.0.0.0:8001/stale_no_cache_long_response 2>&1 | less >>task4/curl.txt
+  # cached
+  curl -vs -H "host: localhost" 0.0.0.0:8001/stale_no_cache_long_response 2>&1 | less >>task4/curl.txt
+  sleep 6
+  # evict stale, also no cache hit
+  curl -vs -H "host: localhost" 0.0.0.0:8001/stale_no_cache_long_response 2>&1 | less >>task4/curl.txt
+  # no cache hit, but caching
+  curl -vs -H "host: localhost" 0.0.0.0:8001/stale_no_cache_long_response 2>&1 | less >>task4/curl.txt
+  # cache hit
+  curl -vs -H "host: localhost" 0.0.0.0:8001/stale_no_cache_long_response 2>&1 | less >>task4/curl.txt
 
   kill -9 $py
   sleep 0.5

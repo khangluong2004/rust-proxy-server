@@ -1,10 +1,10 @@
 use crate::cache::{Cache, CacheRecord};
+use crate::headers;
+use crate::headers::CacheControlHeader;
 use crate::http_parser::HttpParser;
 use std::error::Error;
 use std::io::Write;
 use std::net::{Shutdown, TcpListener, TcpStream};
-use crate::headers;
-use crate::headers::CacheControlHeader;
 
 pub struct Proxy {
     does_cache: bool,
@@ -32,12 +32,14 @@ impl Proxy {
         // get request
         let mut request_parser = HttpParser::new(&mut stream);
         let request = request_parser.read_request()?;
-        
+
         // need to keep the original for cache indexing
         let mut request_headers = request_parser.header_lines()?;
         let original_request_headers = request_parser.header_lines()?;
-        
-        let lines = request_headers.split("\r\n").collect::<Vec<&str>>();
+
+        let lines = request_headers
+            .split(HttpParser::CRLF)
+            .collect::<Vec<&str>>();
         println!("Request tail {}", lines[lines.len() - Self::TAIL_OFFSET]);
 
         let request_host = request.get_host();
@@ -137,6 +139,16 @@ impl Proxy {
         }
         stream.shutdown(Shutdown::Both)?;
 
+        let evict_if_expired = |proxy: &mut Self| {
+            if is_expired {
+                let record = proxy.cache.remove_cache(&original_request_headers);
+                println!(
+                    "Evicting {} {} from cache",
+                    record.request.get_host(),
+                    record.request.url
+                );
+            }
+        };
 
         let response_data = response_parser.data();
         if self.does_cache
@@ -145,23 +157,9 @@ impl Proxy {
         {
             if !allow_cache {
                 println!("Not caching {} {}", request_host, request_url);
-                if is_expired {
-                    let record = self.cache.remove_cache(&original_request_headers);
-                    println!(
-                        "Evicting {} {} from cache",
-                        record.request.get_host(),
-                        record.request.url
-                    );
-                }
+                evict_if_expired(self);
             } else {
-                if is_expired {
-                    let record = self.cache.remove_cache(&original_request_headers);
-                    println!(
-                        "Evicting {} {} from cache",
-                        record.request.get_host(),
-                        record.request.url
-                    );
-                }
+                evict_if_expired(self);
 
                 // cache response
                 let record = self.cache.add_cache(
@@ -179,6 +177,8 @@ impl Proxy {
                     );
                 }
             }
+        } else {
+            evict_if_expired(self);
         }
 
         // Close the server connection as well

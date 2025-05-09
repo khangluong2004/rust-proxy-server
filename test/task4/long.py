@@ -11,6 +11,9 @@ samples = [
 	"max-age=5",
 	"private",
 	"",
+	"max-age=5",
+    "long",
+    ""
 ]
 i = 0
 while True:
@@ -22,14 +25,23 @@ while True:
 
 	# send response
 	sock.send(b"HTTP/1.1 200 OK\r\n")
-	sock.send(b"Content-Length: 12\r\n")
-	sock.send(b"Date: Tue, 29 Oct 2024 16:56:32 GMT\r\n")
 	text = samples[i]
 	i = (i + 1) % len(samples)
+
+	if text == "long":
+		sock.send(b"Content-Length: 100001\r\n")
+	else:
+		sock.send(b"Content-Length: 12\r\n")
+
+	sock.send(b"Date: Tue, 29 Oct 2024 16:56:32 GMT\r\n")
+
 	print('serving', text, flush=True)
 	sock.send(b"Cache-Control: " + bytes(text.encode('ascii')) +b"\r\n")
 	sock.send(b"\r\n")
-	sock.send(b"Hello World!")
+	if text == "long":
+		sock.send(bytes(('0'*100001).encode('ascii')))
+	else:
+		sock.send(b"Hello World!")
 
 	sock.close()
 

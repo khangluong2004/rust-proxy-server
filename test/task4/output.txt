@@ -47,3 +47,23 @@ Response body length 12
 Accepted
 Request tail Accept: */*
 Serving localhost /stale_no_cache_test from cache
+Accepted
+Request tail Accept: */*
+GETting localhost /stale_no_cache_long_response
+Response body length 12
+Accepted
+Request tail Accept: */*
+Serving localhost /stale_no_cache_long_response from cache
+Accepted
+Request tail Accept: */*
+Stale entry for localhost /stale_no_cache_long_response
+GETting localhost /stale_no_cache_long_response
+Response body length 100001
+Evicting localhost /stale_no_cache_long_response from cache
+Accepted
+Request tail Accept: */*
+GETting localhost /stale_no_cache_long_response
+Response body length 12
+Accepted
+Request tail Accept: */*
+Serving localhost /stale_no_cache_long_response from cache
