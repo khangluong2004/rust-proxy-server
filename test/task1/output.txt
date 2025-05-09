@@ -1,0 +1,12 @@
+Accepted
+Request tail Accept: */*
+GETting localhost /simple
+Response body length 12
+Accepted
+Request tail Accept: */*
+GETting localhost /long
+Response body length 200000
+Accepted
+Request tail Accept: */*
+GETting localhost /bytes
+Response body length 1000

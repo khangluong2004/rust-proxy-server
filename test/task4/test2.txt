@@ -1,0 +1,10 @@
+long-cache b'GET /no_cache_test HTTP/1.1\r\nHost: localhost\r\nUser-Agent: curl/8.5.0\r\nAccept: */*\r\n\r\n'
+serving private,max-age=5
+long-cache b'GET /no_cache_test HTTP/1.1\r\nHost: localhost\r\nUser-Agent: curl/8.5.0\r\nAccept: */*\r\n\r\n'
+serving 
+long-cache b'GET /stale_no_cache_test HTTP/1.1\r\nHost: localhost\r\nUser-Agent: curl/8.5.0\r\nAccept: */*\r\n\r\n'
+serving max-age=5
+long-cache b'GET /stale_no_cache_test HTTP/1.1\r\nHost: localhost\r\nUser-Agent: curl/8.5.0\r\nAccept: */*\r\n\r\nIf-Modified-Since: Tue, 29 Oct 2024 16:56:32 GMT\r\n'
+serving private
+long-cache b'GET /stale_no_cache_test HTTP/1.1\r\nHost: localhost\r\nUser-Agent: curl/8.5.0\r\nAccept: */*\r\n\r\n'
+serving 

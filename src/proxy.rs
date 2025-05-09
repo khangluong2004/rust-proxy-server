@@ -32,8 +32,11 @@ impl Proxy {
         // get request
         let mut request_parser = HttpParser::new(&mut stream);
         let request = request_parser.read_request()?;
+        
+        // need to keep the original for cache indexing
         let mut request_headers = request_parser.header_lines()?;
-        let request_data = request_parser.data();
+        let original_request_headers = request_parser.header_lines()?;
+        
         let lines = request_headers.split("\r\n").collect::<Vec<&str>>();
         println!("Request tail {}", lines[lines.len() - Self::TAIL_OFFSET]);
 
@@ -42,7 +45,7 @@ impl Proxy {
         let mut is_expired = false;
         let mut option_cache_record: Option<CacheRecord> = None;
 
-        if self.does_cache && request_data.len() < Self::REQUEST_CACHE_LENGTH {
+        if self.does_cache && request_headers.len() < Self::REQUEST_CACHE_LENGTH {
             // check cache
             if let Some((cache_value, local_is_expired)) = self.cache.get(&request_headers) {
                 is_expired = local_is_expired;
@@ -72,7 +75,7 @@ impl Proxy {
 
         // create remote server socket and forward request
         let mut proxy = TcpStream::connect(format!("{}:80", request_host))?;
-        proxy.write(&request_data)?;
+        proxy.write(&request_headers.as_bytes())?;
 
         // read server header
         let mut response_parser = HttpParser::new(&mut proxy);
@@ -143,7 +146,7 @@ impl Proxy {
             if !allow_cache {
                 println!("Not caching {} {}", request_host, request_url);
                 if is_expired {
-                    let record = self.cache.remove_cache(&request_headers);
+                    let record = self.cache.remove_cache(&original_request_headers);
                     println!(
                         "Evicting {} {} from cache",
                         record.request.get_host(),
@@ -152,7 +155,7 @@ impl Proxy {
                 }
             } else {
                 if is_expired {
-                    let record = self.cache.remove_cache(&request_headers);
+                    let record = self.cache.remove_cache(&original_request_headers);
                     println!(
                         "Evicting {} {} from cache",
                         record.request.get_host(),
@@ -162,7 +165,7 @@ impl Proxy {
 
                 // cache response
                 let record = self.cache.add_cache(
-                    request_headers.clone(),
+                    original_request_headers,
                     request,
                     response_data,
                     expiry_time,

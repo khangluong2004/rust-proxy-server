@@ -1,0 +1,182 @@
+Accepted
+Request tail Accept: */*
+GETting localhost /a
+Response body length 12
+Not caching localhost /a
+Accepted
+Request tail Accept: */*
+GETting localhost /a
+Response body length 12
+Not caching localhost /a
+Accepted
+Request tail Accept: */*
+GETting localhost /b
+Response body length 12
+Not caching localhost /b
+Accepted
+Request tail Accept: */*
+GETting localhost /b
+Response body length 12
+Not caching localhost /b
+Accepted
+Request tail Accept: */*
+GETting localhost /c
+Response body length 12
+Not caching localhost /c
+Accepted
+Request tail Accept: */*
+GETting localhost /c
+Response body length 12
+Not caching localhost /c
+Accepted
+Request tail Accept: */*
+GETting localhost /d
+Response body length 12
+Not caching localhost /d
+Accepted
+Request tail Accept: */*
+GETting localhost /d
+Response body length 12
+Not caching localhost /d
+Accepted
+Request tail Accept: */*
+GETting localhost /e
+Response body length 12
+Not caching localhost /e
+Accepted
+Request tail Accept: */*
+GETting localhost /e
+Response body length 12
+Not caching localhost /e
+Accepted
+Request tail Accept: */*
+GETting localhost /f
+Response body length 12
+Not caching localhost /f
+Accepted
+Request tail Accept: */*
+GETting localhost /f
+Response body length 12
+Not caching localhost /f
+Accepted
+Request tail Accept: */*
+GETting localhost /1
+Response body length 12
+Not caching localhost /1
+Accepted
+Request tail Accept: */*
+GETting localhost /1
+Response body length 12
+Not caching localhost /1
+Accepted
+Request tail Accept: */*
+GETting localhost /2
+Response body length 12
+Not caching localhost /2
+Accepted
+Request tail Accept: */*
+GETting localhost /2
+Response body length 12
+Not caching localhost /2
+Accepted
+Request tail Accept: */*
+GETting localhost /3
+Response body length 12
+Not caching localhost /3
+Accepted
+Request tail Accept: */*
+GETting localhost /3
+Response body length 12
+Not caching localhost /3
+Accepted
+Request tail Accept: */*
+GETting localhost /4
+Response body length 12
+Not caching localhost /4
+Accepted
+Request tail Accept: */*
+GETting localhost /4
+Response body length 12
+Not caching localhost /4
+Accepted
+Request tail Accept: */*
+GETting localhost /5
+Response body length 12
+Accepted
+Request tail Accept: */*
+Serving localhost /5 from cache
+Accepted
+Request tail Accept: */*
+GETting localhost /6
+Response body length 12
+Accepted
+Request tail Accept: */*
+Serving localhost /6 from cache
+Accepted
+Request tail Accept: */*
+GETting localhost /7
+Response body length 12
+Accepted
+Request tail Accept: */*
+Serving localhost /7 from cache
+Accepted
+Request tail Accept: */*
+GETting localhost /8
+Response body length 12
+Not caching localhost /8
+Accepted
+Request tail Accept: */*
+GETting localhost /8
+Response body length 12
+Not caching localhost /8
+Accepted
+Request tail Accept: */*
+GETting localhost /9
+Response body length 12
+Not caching localhost /9
+Accepted
+Request tail Accept: */*
+GETting localhost /9
+Response body length 12
+Not caching localhost /9
+Accepted
+Request tail Accept: */*
+GETting localhost /10
+Response body length 12
+Not caching localhost /10
+Accepted
+Request tail Accept: */*
+GETting localhost /10
+Response body length 12
+Not caching localhost /10
+Accepted
+Request tail Accept: */*
+GETting localhost /11
+Response body length 12
+Not caching localhost /11
+Accepted
+Request tail Accept: */*
+GETting localhost /11
+Response body length 12
+Not caching localhost /11
+Accepted
+Request tail Accept: */*
+GETting localhost /1001
+Response body length 12
+Accepted
+Request tail Accept: */*
+Serving localhost /1001 from cache
+Accepted
+Request tail Accept: */*
+GETting localhost /1002
+Response body length 12
+Accepted
+Request tail Accept: */*
+Serving localhost /1002 from cache
+Accepted
+Request tail Accept: */*
+GETting localhost /1003
+Response body length 12
+Accepted
+Request tail Accept: */*
+Serving localhost /1003 from cache
