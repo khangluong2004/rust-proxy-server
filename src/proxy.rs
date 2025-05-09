@@ -191,9 +191,8 @@ impl Proxy {
         // note that the default backlog is 128 in rust, and it cannot be changed
         let listener = TcpListener::bind(format!(":::{}", port))?;
         for stream in listener.incoming() {
-            let result = stream
-                .map_err(|err| Box::new(err) as Box<dyn Error>)
-                .and_then(|stream| self.handle_connection(stream));
+            let stream = stream?;
+            let result = self.handle_connection(stream);
             match result {
                 Ok(()) => {}
                 Err(err) => {

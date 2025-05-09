@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::error::Error;
+use crate::http_parser::HttpParser;
 
 #[derive(Clone)]
 pub struct Request {
@@ -16,17 +17,17 @@ impl Request {
         let mut headers = HashMap::new();
 
         // first line is special
-        let first = request.split("\r\n").nth(0).unwrap();
+        let first = request.split(HttpParser::CRLF).nth(0).ok_or("error in parsing request first line")?;
         let [_method, url, _format] = &first
             .split(" ")
             .into_iter()
             .map(String::from)
             .collect::<Vec<String>>()[..]
         else {
-            return Err("Error in parsing request first line".into());
+            return Err("error in parsing request first line".into());
         };
 
-        for line in request.split("\r\n").skip(1) {
+        for line in request.split(HttpParser::CRLF).skip(1) {
             if line == "" {
                 break;
             }
@@ -35,7 +36,7 @@ impl Request {
             if let [header, value] = line.split(": ").collect::<Vec<&str>>()[..] {
                 headers.insert(header.to_string().to_lowercase(), value.to_string());
             } else {
-                println!("skipping unknown header {}", line);
+                return Err(format!("unknown header {}", line).into());
             }
         }
 

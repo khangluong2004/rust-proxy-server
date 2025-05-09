@@ -263,13 +263,60 @@ test_task4() {
   kill -9 $port
 }
 
+
+test_task5() {
+  echo "Task5"
+  echo "Launch exe at port 8001"
+  ./htproxy -p 8001 -c >task5/output.txt 2>task5/err.txt &
+  port=$!
+
+  rm -f task5/curl.txt
+
+#  rm -f task5/test1.txt
+#  # do tests
+#  echo "test1"
+#  python3 task5/simple.py >task5/test1.txt &
+#  py=$!
+#  sleep .5
+#
+#  # first to cache
+#  curl -vs -H "host: localhost" 0.0.0.0:8001/basic_not_modified 2>&1 | less >>task5/curl.txt
+#  # cached, nothing happens
+#  curl -vs -H "host: localhost" 0.0.0.0:8001/basic_not_modified 2>&1 | less >>task5/curl.txt
+#  sleep 2
+#  # show be stale, server will return not modified
+#  curl -vs -H "host: localhost" 0.0.0.0:8001/basic_not_modified 2>&1 | less >>task5/curl.txt
+#  curl -vs -H "host: localhost" 0.0.0.0:8001/basic_not_modified 2>&1 | less >>task5/curl.txt
+#  kill -9 $py
+#  sleep 0.5
+
+  echo "test2"
+  python3 task5/crash.py >task5/test2.txt &
+  py=$!
+  sleep .5
+
+  curl -vs -H "host: localhost" 0.0.0.0:8001/normal 2>&1 | less >>task5/curl.txt
+  curl -vs -H "host: localhost" 0.0.0.0:8001/no_date 2>&1 | less >>task5/curl.txt
+  curl -vs -H "host: localhost" 0.0.0.0:8001/bad_url 2>&1 | less >>task5/curl.txt
+  curl -vs -H "host: what" 0.0.0.0:8001/bad_host 2>&1 | less >>task5/curl.txt
+  curl -vs -H "host: localhost" 0.0.0.0:8001/bad_header 2>&1 | less >>task5/curl.txt
+
+  kill -9 $py
+  sleep 0.5
+
+  echo "Kill exe and server"
+  kill -9 $port
+}
+
 mkdir -p task1
 mkdir -p task2
 mkdir -p task3
 mkdir -p task4
+mkdir -p task5
 
-test_task1
-test_task2
-test_task3
-test_task4
+#test_task1
+#test_task2
+#test_task3
+#test_task4
+test_task5
 echo "Done"

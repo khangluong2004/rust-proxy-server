@@ -1,0 +1,21 @@
+Accepted
+Request tail Accept: */*
+GETting localhost /normal
+Response body length 12
+Accepted
+Request tail Accept: */*
+GETting localhost /no_date
+Response body length 12
+error: no date in response
+Accepted
+Request tail Accept: */*
+GETting localhost /bad_url
+error: can't find status code
+Accepted
+Request tail Accept: */*
+GETting what /bad_host
+error: failed to lookup address information: Name or service not known
+Accepted
+Request tail Accept: */*
+GETting localhost /bad_header
+error: unknown header fasdkjhf asdf s
