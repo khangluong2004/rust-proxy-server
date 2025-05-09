@@ -16,9 +16,9 @@ pub struct HttpParser<'a> {
 }
 
 impl<'a> HttpParser<'a> {
-    const CRLF: &'static str = "\r\n";
-    const CRLF_BYTES: &'static [u8] = "\r\n".as_bytes();
-    const CRLF_LEN: usize = Self::CRLF.len();
+    pub const CRLF: &'static str = "\r\n";
+    pub const CRLF_BYTES: &'static [u8] = "\r\n".as_bytes();
+    pub const CRLF_LEN: usize = Self::CRLF.len();
     const READ_BUFFER_SIZE: usize = 1024;
     const RESPONSE_MAX_SIZE: usize = 100_000;
 
@@ -116,84 +116,4 @@ impl<'a> HttpParser<'a> {
         Ok(buffer)
     }
 
-    // Appends the header key value pair to a header_lines that ends with the \r\n
-    pub fn append_header(header_lines: String, key: &String, value: &String) -> String {
-        let stripped = header_lines[..header_lines.len() - Self::CRLF_LEN].to_owned();
-        format!("{}{}{}: {}{}", stripped, Self::CRLF, key, value, Self::CRLF)
-    }
-
-    // Task 3: Cache-control parser helper functions
-    // Special parse for cache header: Split by comma, and treat quoted string
-    // as 1 token
-    // Rules from RFC9110:
-    // Without quotation mark: "!" / "#" / "$" / "%" / "&" / "'" / "*"
-    //  / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
-    //  / DIGIT / ALPHA
-    // With quotation mark: Any character, except \" and \\
-    // If there is backlash, ignore all rules and treat next char as character
-    // Should only see backlash inside quotation mark
-    fn cache_control_split(cache_header: &String) -> Vec<String> {
-        let mut result = vec![];
-        let mut current = "".to_string();
-
-        let mut ptr = 0;
-        let mut is_quoted = false;
-        let text = cache_header.as_bytes();
-        while ptr < text.len() {
-            let c = char::from(text[ptr]);
-            let c_str = c.to_string();
-            match (is_quoted, c) {
-                (true, '"') => {
-                    is_quoted = false;
-                    current += &c_str;
-                }
-                (true, '\\') => {
-                    ptr += 1;
-                    current += &text[ptr].to_string();
-                }
-                (false, '"') => {
-                    is_quoted = true;
-                    current += &c_str;
-                }
-                (false, ',') => {
-                    result.push(current);
-                    current = "".to_string();
-                }
-                _ => {
-                    current += &c_str;
-                }
-            }
-
-            ptr += 1;
-        }
-
-        if !current.is_empty() {
-            result.push(current);
-        }
-
-        result
-    }
-    
-    pub fn parse_cache_control 
-
-    // Task 4 helpers: Extract expiry time from directive
-    pub fn get_cache_expire(cache_directive_list: &Vec<String>) -> Option<u32> {
-        for cache_directive in cache_directive_list {
-            if !cache_directive.contains("max-age=") {
-                continue;
-            }
-
-            let prefix_len = "max-age=".len();
-            match cache_directive[prefix_len..].parse::<u32>() {
-                Ok(expiry_time) => {
-                    return Some(expiry_time);
-                }
-                Err(_) => {
-                    return None;
-                }
-            };
-        }
-
-        None
-    }
 }

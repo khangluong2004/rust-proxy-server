@@ -3,6 +3,8 @@ use crate::http_parser::HttpParser;
 use std::error::Error;
 use std::io::Write;
 use std::net::{Shutdown, TcpListener, TcpStream};
+use crate::headers;
+use crate::headers::CacheControlHeader;
 
 pub struct Proxy {
     does_cache: bool,
@@ -13,16 +15,7 @@ impl Proxy {
     const TAIL_OFFSET: usize = 3;
     const REQUEST_CACHE_LENGTH: usize = 2000;
     const RESPONSE_CACHE_LENGTH: usize = 100_000;
-    const IF_MODIFIED_SINCE_HEADER: &'static str = "If-Modified-Since";
-    const CONTENT_LENGTH_HEADER: &'static str = "content-length";
-    const CACHE_DISALLOWED_ENTRIES: [&'static str; 6] = [
-        "private",
-        "no-store",
-        "no-cache",
-        "max-age",
-        "must-revalidate",
-        "proxy-revalidate",
-    ];
+  
 
     pub fn new(does_cache: bool) -> Self {
         Self {
@@ -65,9 +58,9 @@ impl Proxy {
                     // Logging for task 4
                     println!("Stale entry for {} {}", request_host, request_url);
                     // Modify the request_lines for task 5
-                    request_headers = HttpParser::append_header(
+                    request_headers = headers::append_header(
                         request_headers,
-                        &(Self::IF_MODIFIED_SINCE_HEADER.into()),
+                        &(headers::IF_MODIFIED_SINCE_HEADER.into()),
                         &cache_value.date,
                     );
                 }
@@ -107,7 +100,7 @@ impl Proxy {
         // Get content length
         let content_length = response
             .headers
-            .get(Self::CONTENT_LENGTH_HEADER)
+            .get(headers::CONTENT_LENGTH_HEADER)
             .ok_or("expected a content length in the response")?
             .parse::<usize>()?;
         println!("Response body length {}", content_length);
@@ -115,22 +108,18 @@ impl Proxy {
         // Get cache-control
         let mut allow_cache = true;
         let mut expiry_time = None;
-        if let Some(cache_control_val) = response.headers.get("cache-control") {
-            let word_list = HttpParser::cache_control_split(cache_control_val);
-            for word in word_list {
-                if word.
-            }
-            let allow_cache_local = self.cache.is_cache_allowed(&word_list);
-            allow_cache = allow_cache_local;
+        if let Some(cache_control_val) = response.headers.get(headers::CACHE_CONTROL_HEADER) {
+            let cache_control = CacheControlHeader::new(cache_control_val);
+            allow_cache = cache_control.should_cache();
             if allow_cache {
-                expiry_time = HttpParser::get_cache_expire(&word_list);
+                expiry_time = cache_control.cache_expire();
             }
         };
 
         // Get date
         let date = response
             .headers
-            .get("date")
+            .get(headers::DATE_HEADER)
             .ok_or::<Box<dyn Error>>("no date in response".into())?
             .clone();
 
@@ -145,12 +134,7 @@ impl Proxy {
             count += bytes.len();
         }
         stream.shutdown(Shutdown::Both)?;
-
-        // // If is_expired, remove from cache and load back
-        // // Handle logging later on (to follow specs sequence)
-        // if is_expired {
-        //     self.cache.remove_cache(&request_headers);
-        // }
+        
 
         let response_data = response_parser.data();
         if self.does_cache
@@ -194,12 +178,6 @@ impl Proxy {
                 }
             }
         }
-        // else {
-        //     // If expired, and can't be cached, log evict
-        //     if is_expired {
-        //         println!("Evicting {} {} from cache", host, url);
-        //     }
-        // }
 
         // Close the server connection as well
         proxy.shutdown(Shutdown::Both)?;

@@ -4,6 +4,7 @@ mod lru_queue;
 mod proxy;
 mod request;
 mod response;
+mod headers;
 
 use crate::proxy::Proxy;
 use std::env;
