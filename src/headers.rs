@@ -8,7 +8,7 @@ const CACHE_DISALLOWED_ENTRIES: [&'static str; 6] = [
     "private",
     "no-store",
     "no-cache",
-    "max-age",
+    "max-age=0",
     "must-revalidate",
     "proxy-revalidate",
 ];
@@ -77,7 +77,7 @@ impl CacheControlHeader {
             ptr += 1;
         }
 
-        if !current.is_empty() {
+        if !current.trim().is_empty() {
             result.push(current.trim().to_lowercase().to_string());
         }
 

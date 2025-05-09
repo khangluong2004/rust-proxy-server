@@ -154,6 +154,21 @@ test_task3() {
   curl -vs -H "host: localhost" 0.0.0.0:8001/6 2>&1 | less >>task3/curl.txt
   curl -vs -H "host: localhost" 0.0.0.0:8001/7 2>&1 | less >>task3/curl.txt
   curl -vs -H "host: localhost" 0.0.0.0:8001/7 2>&1 | less >>task3/curl.txt
+  curl -vs -H "host: localhost" 0.0.0.0:8001/8 2>&1 | less >>task3/curl.txt
+  curl -vs -H "host: localhost" 0.0.0.0:8001/8 2>&1 | less >>task3/curl.txt
+  curl -vs -H "host: localhost" 0.0.0.0:8001/9 2>&1 | less >>task3/curl.txt
+  curl -vs -H "host: localhost" 0.0.0.0:8001/9 2>&1 | less >>task3/curl.txt
+  curl -vs -H "host: localhost" 0.0.0.0:8001/10 2>&1 | less >>task3/curl.txt
+  curl -vs -H "host: localhost" 0.0.0.0:8001/10 2>&1 | less >>task3/curl.txt
+  curl -vs -H "host: localhost" 0.0.0.0:8001/11 2>&1 | less >>task3/curl.txt
+  curl -vs -H "host: localhost" 0.0.0.0:8001/11 2>&1 | less >>task3/curl.txt
+
+  curl -vs -H "host: localhost" 0.0.0.0:8001/1001 2>&1 | less >>task3/curl.txt
+  curl -vs -H "host: localhost" 0.0.0.0:8001/1001 2>&1 | less >>task3/curl.txt
+  curl -vs -H "host: localhost" 0.0.0.0:8001/1002 2>&1 | less >>task3/curl.txt
+  curl -vs -H "host: localhost" 0.0.0.0:8001/1002 2>&1 | less >>task3/curl.txt
+  curl -vs -H "host: localhost" 0.0.0.0:8001/1003 2>&1 | less >>task3/curl.txt
+  curl -vs -H "host: localhost" 0.0.0.0:8001/1003 2>&1 | less >>task3/curl.txt
 
   kill -9 $py
   sleep 0.5
