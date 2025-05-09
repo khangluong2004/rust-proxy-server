@@ -2,3 +2,4 @@ crash b'GET /normal HTTP/1.1\r\nHost: localhost\r\nUser-Agent: curl/8.5.0\r\nAcc
 crash b'GET /no_date HTTP/1.1\r\nHost: localhost\r\nUser-Agent: curl/8.5.0\r\nAccept: */*\r\n\r\n'
 crash b'GET /bad_url HTTP/1.1\r\nHost: localhost\r\nUser-Agent: curl/8.5.0\r\nAccept: */*\r\n\r\n'
 crash b'GET /bad_header HTTP/1.1\r\nHost: localhost\r\nUser-Agent: curl/8.5.0\r\nAccept: */*\r\n\r\n'
+crash b'GET /no_content_length HTTP/1.1\r\nHost: localhost\r\nUser-Agent: curl/8.5.0\r\nAccept: */*\r\n\r\n'

@@ -68,7 +68,7 @@ impl<'a> HttpParser<'a> {
             self.data.extend_from_slice(&line);
 
             let line = String::from_utf8(line)?;
-            if line == "\r\n" {
+            if line == Self::CRLF {
                 self.header_length = self.data.len();
                 return Request::from_string(String::from_utf8(self.data.clone())?);
             }
@@ -84,7 +84,7 @@ impl<'a> HttpParser<'a> {
             self.data.extend_from_slice(&line);
 
             let line = String::from_utf8(line)?;
-            if line == "\r\n" {
+            if line == Self::CRLF {
                 self.header_length = self.data.len();
                 return Response::from_string(String::from_utf8(self.data.clone())?);
             }

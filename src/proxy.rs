@@ -139,15 +139,17 @@ impl Proxy {
         }
         stream.shutdown(Shutdown::Both)?;
 
-        let evict_if_expired = |proxy: &mut Self| {
+        let evict_if_expired = |proxy: &mut Self| -> Result<(), Box<dyn Error>> {
             if is_expired {
-                let record = proxy.cache.remove_cache(&original_request_headers);
+                let record = proxy.cache.remove_cache(&original_request_headers)?;
                 println!(
                     "Evicting {} {} from cache",
                     record.request.get_host(),
                     record.request.url
                 );
             }
+            
+            Ok(())
         };
 
         let response_data = response_parser.data();
@@ -157,9 +159,9 @@ impl Proxy {
         {
             if !allow_cache {
                 println!("Not caching {} {}", request_host, request_url);
-                evict_if_expired(self);
+                evict_if_expired(self)?;
             } else {
-                evict_if_expired(self);
+                evict_if_expired(self)?;
 
                 // cache response
                 let record = self.cache.add_cache(
@@ -168,7 +170,7 @@ impl Proxy {
                     response_data,
                     expiry_time,
                     date,
-                );
+                )?;
                 if let Some(record) = record {
                     println!(
                         "Evicting {} {} from cache",
@@ -178,7 +180,7 @@ impl Proxy {
                 }
             }
         } else {
-            evict_if_expired(self);
+            evict_if_expired(self)?;
         }
 
         // Close the server connection as well
@@ -196,7 +198,7 @@ impl Proxy {
             match result {
                 Ok(()) => {}
                 Err(err) => {
-                    println!("error: {}", err);
+                    println!("handle_connection error: {}", err);
                 } // ignored errors
             }
         }

@@ -38,6 +38,9 @@ while True:
 		sock.send(b"Content-Length: 12\r\n")
 		sock.send(b"\r\n")
 		sock.send(b"Hello World!")
+	elif i == 5:
+		sock.send(b"HTTP/1.1 200 OK\r\n")
+		sock.send(b"\r\n")
 	else:
 		# send response
 		sock.send(b"HTTP/1.1 200 OK\r\n")

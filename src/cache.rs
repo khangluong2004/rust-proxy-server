@@ -1,6 +1,7 @@
 use crate::lru_queue::LruQueue;
 use crate::request::Request;
 use std::collections::HashMap;
+use std::error::Error;
 use std::time::Instant;
 
 #[derive(Clone)]
@@ -82,14 +83,19 @@ impl Cache {
         response_data: Vec<u8>,
         expiry: Option<u32>,
         date: String,
-    ) -> Option<CacheRecord> {
+    ) -> Result<Option<CacheRecord>, Box<dyn Error>> {
         let mut evicted = None;
 
         // evict if full
         if self.cache.len() == Self::CACHE_MAX {
-            // remove lru
-            let evicted_key = self.lru.evict_lru().unwrap();
-            evicted = Some(self.cache.get(&evicted_key).unwrap().clone());
+            // try to remove lru
+            let evicted_key = self.lru.evict_lru().ok_or("lru empty when evicting")?;
+            evicted = Some(
+                self.cache
+                    .get(&evicted_key)
+                    .ok_or("evicted lru key doesn't exist in cache")?
+                    .clone(),
+            );
             self.cache.remove(&evicted_key);
         }
 
@@ -100,13 +106,13 @@ impl Cache {
             CacheRecord::new(request, response_data, time_now, expiry, date),
         );
 
-        evicted
+        Ok(evicted)
     }
 
-    pub fn remove_cache(self: &mut Cache, request: &String) -> CacheRecord {
-        self.lru.evict_lru_by_value(request).unwrap();
-        let record = self.cache.get(request).unwrap().clone();
+    pub fn remove_cache(self: &mut Cache, request: &String) -> Result<CacheRecord, Box<dyn Error>> {
+        self.lru.evict_lru_by_value(request).ok_or("no lru value exists when removing request")?;
+        let record = self.cache.get(request).ok_or("evicted lru key doesn't exist in cache")?.clone();
         self.cache.remove(request);
-        record
+        Ok(record)
     }
 }
