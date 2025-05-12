@@ -9,7 +9,8 @@ pub struct Response {
 }
 
 impl Response {
-    const RESPONSE_FIRST_ITEMS: usize = 3;
+    const RESPONSE_STATUS_CODE_POSITION: usize = 1;
+    const HEADER_PARTS: usize = 2;
     pub fn from_string(response: String) -> Result<Self, Box<dyn Error>> {
         let mut headers = HashMap::new();
         let mut first_line = true;
@@ -18,15 +19,15 @@ impl Response {
         for line in response.split(HttpParser::CRLF) {
             // First line is special
             if first_line {
-                let [_version, local_status_code, _status_msg] = &line
-                    .splitn(Self::RESPONSE_FIRST_ITEMS, " ")
-                    .into_iter()
-                    .map(String::from)
-                    .collect::<Vec<String>>()[..]
-                else {
+                let parts: Vec<&str> = line.split(" ").collect();
+                if Self::RESPONSE_STATUS_CODE_POSITION >= parts.len() {
                     return Err("can't find status code".into());
-                };
-                status_code = Some(local_status_code.clone());
+                }
+                status_code = Some(
+                    parts[Self::RESPONSE_STATUS_CODE_POSITION]
+                        .to_string()
+                        .clone(),
+                );
                 first_line = false;
                 continue;
             }
@@ -36,7 +37,9 @@ impl Response {
             }
 
             // parse header
-            if let [header, value] = line.split(": ").collect::<Vec<&str>>()[..] {
+            if let [header, value] =
+                line.splitn(Self::HEADER_PARTS, ": ").collect::<Vec<&str>>()[..]
+            {
                 headers.insert(header.to_string().to_lowercase(), value.to_string());
             } else {
                 return Err(format!("unknown header {}", line).into());

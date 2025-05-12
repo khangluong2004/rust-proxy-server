@@ -1,6 +1,6 @@
+use crate::http_parser::HttpParser;
 use std::collections::HashMap;
 use std::error::Error;
-use crate::http_parser::HttpParser;
 
 #[derive(Clone)]
 pub struct Request {
@@ -9,6 +9,8 @@ pub struct Request {
 }
 
 impl Request {
+    const HEADER_PARTS: usize = 2;
+
     pub fn get_host(self: &Request) -> String {
         self.headers.get("host").unwrap().clone()
     }
@@ -17,7 +19,10 @@ impl Request {
         let mut headers = HashMap::new();
 
         // first line is special
-        let first = request.split(HttpParser::CRLF).nth(0).ok_or("error in parsing request first line")?;
+        let first = request
+            .split(HttpParser::CRLF)
+            .nth(0)
+            .ok_or("error in parsing request first line")?;
         let [_method, url, _format] = &first
             .split(" ")
             .into_iter()
@@ -33,7 +38,9 @@ impl Request {
             }
 
             // parse header
-            if let [header, value] = line.split(": ").collect::<Vec<&str>>()[..] {
+            if let [header, value] =
+                line.splitn(Self::HEADER_PARTS, ": ").collect::<Vec<&str>>()[..]
+            {
                 headers.insert(header.to_string().to_lowercase(), value.to_string());
             } else {
                 return Err(format!("unknown header {}", line).into());
