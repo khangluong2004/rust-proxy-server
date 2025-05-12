@@ -174,20 +174,13 @@ impl Proxy {
                 evict_if_expired(self)?;
 
                 // cache response
-                let record = self.cache.add_cache(
+                self.cache.add_cache(
                     original_request_headers,
                     request,
                     response_data,
                     expiry_time,
                     date,
                 )?;
-                if let Some(record) = record {
-                    println!(
-                        "Evicting {} {} from cache",
-                        record.request.get_host(),
-                        record.request.url
-                    );
-                }
             }
         } else {
             evict_if_expired(self)?;

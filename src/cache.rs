@@ -83,9 +83,7 @@ impl Cache {
         response_data: Vec<u8>,
         expiry: Option<u32>,
         date: String,
-    ) -> Result<Option<CacheRecord>, Box<dyn Error>> {
-        let mut evicted = None;
-
+    ) -> Result<(), Box<dyn Error>> {
         if self.cache.len() == Self::CACHE_MAX {
             return Err("cache is full".into());
         }
@@ -96,33 +94,39 @@ impl Cache {
             request_data,
             CacheRecord::new(request, response_data, time_now, expiry, date),
         );
-
-        Ok(evicted)
+        
+        Ok(())
     }
-    
+
     pub fn is_full(self: &Cache) -> bool {
         self.cache.len() == Self::CACHE_MAX
     }
-    
+
     pub fn remove_lru_cache(self: &mut Cache) -> Result<CacheRecord, Box<dyn Error>> {
         if self.cache.len() == Self::CACHE_MAX {
             // try to remove lru
             let evicted_key = self.lru.evict_lru().ok_or("lru empty when evicting")?;
-            let evicted = 
-                self.cache
-                    .get(&evicted_key)
-                    .ok_or("evicted lru key doesn't exist in cache")?
-                    .clone();
+            let evicted = self
+                .cache
+                .get(&evicted_key)
+                .ok_or("evicted lru key doesn't exist in cache")?
+                .clone();
             self.cache.remove(&evicted_key);
             return Ok(evicted);
         }
-        
+
         Err("cache is not full".into())
     }
 
     pub fn remove_cache(self: &mut Cache, request: &String) -> Result<CacheRecord, Box<dyn Error>> {
-        self.lru.evict_lru_by_value(request).ok_or("no lru value exists when removing request")?;
-        let record = self.cache.get(request).ok_or("evicted lru key doesn't exist in cache")?.clone();
+        self.lru
+            .evict_lru_by_value(request)
+            .ok_or("no lru value exists when removing request")?;
+        let record = self
+            .cache
+            .get(request)
+            .ok_or("evicted lru key doesn't exist in cache")?
+            .clone();
         self.cache.remove(request);
         Ok(record)
     }
