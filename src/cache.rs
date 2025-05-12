@@ -86,17 +86,8 @@ impl Cache {
     ) -> Result<Option<CacheRecord>, Box<dyn Error>> {
         let mut evicted = None;
 
-        // evict if full
         if self.cache.len() == Self::CACHE_MAX {
-            // try to remove lru
-            let evicted_key = self.lru.evict_lru().ok_or("lru empty when evicting")?;
-            evicted = Some(
-                self.cache
-                    .get(&evicted_key)
-                    .ok_or("evicted lru key doesn't exist in cache")?
-                    .clone(),
-            );
-            self.cache.remove(&evicted_key);
+            return Err("cache is full".into());
         }
 
         let time_now = Instant::now();
@@ -107,6 +98,26 @@ impl Cache {
         );
 
         Ok(evicted)
+    }
+    
+    pub fn is_full(self: &Cache) -> bool {
+        self.cache.len() == Self::CACHE_MAX
+    }
+    
+    pub fn remove_lru_cache(self: &mut Cache) -> Result<CacheRecord, Box<dyn Error>> {
+        if self.cache.len() == Self::CACHE_MAX {
+            // try to remove lru
+            let evicted_key = self.lru.evict_lru().ok_or("lru empty when evicting")?;
+            let evicted = 
+                self.cache
+                    .get(&evicted_key)
+                    .ok_or("evicted lru key doesn't exist in cache")?
+                    .clone();
+            self.cache.remove(&evicted_key);
+            return Ok(evicted);
+        }
+        
+        Err("cache is not full".into())
     }
 
     pub fn remove_cache(self: &mut Cache, request: &String) -> Result<CacheRecord, Box<dyn Error>> {

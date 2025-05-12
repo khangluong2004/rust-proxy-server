@@ -70,6 +70,16 @@ impl Proxy {
                 }
 
                 option_cache_record = Some(cache_value);
+            } else {
+                // evict if full, task 2
+                if self.cache.is_full() {
+                    let record = self.cache.remove_lru_cache()?;
+                    println!(
+                        "Evicting {} {} from cache",
+                        record.request.get_host(),
+                        record.request.url
+                    );
+                }
             }
         }
 
