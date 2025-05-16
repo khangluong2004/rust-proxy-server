@@ -1,0 +1,44 @@
+Accepted
+Request tail Accept: */*
+GETting localhost /basic_not_modified
+Response body length 12
+Accepted
+Request tail Accept: */*
+Serving localhost /basic_not_modified from cache
+Accepted
+Request tail Accept: */*
+Stale entry for localhost /basic_not_modified
+GETting localhost /basic_not_modified
+Serving localhost /basic_not_modified from cache
+Entry for localhost /basic_not_modified unmodified
+Accepted
+Request tail Accept: */*
+Stale entry for localhost /basic_not_modified
+GETting localhost /basic_not_modified
+Serving localhost /basic_not_modified from cache
+Entry for localhost /basic_not_modified unmodified
+Accepted
+Request tail Accept: */*
+GETting localhost /normal
+Response body length 12
+Accepted
+Request tail Accept: */*
+GETting localhost /no_date
+Response body length 12
+handle_connection error: no date in response
+Accepted
+Request tail Accept: */*
+GETting localhost /bad_url
+handle_connection error: can't find status code
+Accepted
+Request tail Accept: */*
+GETting what /bad_host
+handle_connection error: failed to lookup address information: Name or service not known
+Accepted
+Request tail Accept: */*
+GETting localhost /bad_header
+handle_connection error: unknown header fasdkjhf asdf s
+Accepted
+Request tail Accept: */*
+GETting localhost /no_content_length
+handle_connection error: expected a content length in the response

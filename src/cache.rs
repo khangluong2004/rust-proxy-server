@@ -1,23 +1,33 @@
 use crate::lru_queue::LruQueue;
+use crate::request::Request;
 use std::collections::HashMap;
+use std::error::Error;
 use std::time::Instant;
 
 #[derive(Clone)]
 pub struct CacheRecord {
-    pub response: String,
+    pub request: Request,
+    pub response: Vec<u8>,
     pub time_now: Instant,
     pub expiry_secs: Option<u32>,
-    pub date: String
+    pub date: String,
 }
 
 impl CacheRecord {
     // Assume all response have Date, following specs
-    pub fn new(response: String, time_now: Instant, expiry_secs: Option<u32>, date: String) -> Self {
+    pub fn new(
+        request: Request,
+        response: Vec<u8>,
+        time_now: Instant,
+        expiry_secs: Option<u32>,
+        date: String,
+    ) -> Self {
         Self {
+            request,
             response,
             time_now,
             expiry_secs,
-            date
+            date,
         }
     }
 }
@@ -29,6 +39,7 @@ pub struct Cache {
 
 impl Cache {
     const CACHE_MAX: usize = 10;
+
     pub fn new() -> Self {
         Self {
             lru: LruQueue::new(),
@@ -52,71 +63,71 @@ impl Cache {
         false
     }
 
-    pub fn get_cached(self: &mut Cache, request: &String) -> Option<(Option<CacheRecord>, bool)> {
-        let mut is_expired = false;
-        if !self.cache.contains_key(request) {
-            return Some((None, is_expired));
-        };
-
+    // Returns (entry, is_expired) from the cache given the request, none if the cache doesn't exist
+    pub fn get(self: &mut Cache, request: &String) -> Option<(CacheRecord, bool)> {
         let entry_ref = self.cache.get(request)?;
-        // println!("Checking time out");
-        // println!("Entry expiry: {:?}", entry_ref.expiry_secs);
         if self.check_time_out(&entry_ref.time_now, entry_ref.expiry_secs) {
-            is_expired = true;
-            return Some((Some(entry_ref.clone()), is_expired));
+            return Some((entry_ref.clone(), true));
         }
 
         // If in cache, move to end of lru
         self.lru.add_lru(request);
-        Some((Some(entry_ref.clone()), is_expired))
+        Some((entry_ref.clone(), false))
     }
 
-    pub fn add_cache(self: &mut Cache, req: String, res: String, expiry: Option<u32>, date: String) -> bool {
-        // evict if full
-        let mut is_evicted = false;
+    // Adds
+    pub fn add_cache(
+        self: &mut Cache,
+        request_data: String,
+        request: Request,
+        response_data: Vec<u8>,
+        expiry: Option<u32>,
+        date: String,
+    ) -> Result<(), Box<dyn Error>> {
         if self.cache.len() == Self::CACHE_MAX {
-            if let Some(evict_elem) = self.lru.evict_lru() {
-                self.cache.remove(&evict_elem);
-                is_evicted = true;
-            };
+            return Err("cache is full".into());
         }
 
         let time_now = Instant::now();
-        self.lru.add_lru(&req);
-        self.cache
-            .insert(req, CacheRecord::new(res, time_now, expiry, date));
-
-        is_evicted
-    }
-    pub fn remove_cache(self: &mut Cache, request: &String){
-        self.cache.remove(request);
-        self.lru.remove_lru(request);
+        self.lru.add_lru(&request_data);
+        self.cache.insert(
+            request_data,
+            CacheRecord::new(request, response_data, time_now, expiry, date),
+        );
+        
+        Ok(())
     }
 
-    // Task 3: Handle cache-control directive checking
-    fn is_cache_allowed_single(self: &Cache, cache_header: &String) -> bool{
-        // TODO: Is "max-age=\"0\"" valid
-        !(cache_header == "private" 
-            || cache_header == "no-store"
-            || cache_header == "no-cache"
-            || cache_header == "max-age=0"
-            || cache_header == "must-validate"
-            || cache_header == "proxy-revalidate")
+    pub fn is_full(self: &Cache) -> bool {
+        self.cache.len() == Self::CACHE_MAX
     }
 
-    fn is_cache_allowed_list(self: &Cache, word_list: &Vec<String>) -> bool{
-        for word in word_list{
-            if !self.is_cache_allowed_single(word) {
-                return false;
-            }
+    pub fn remove_lru_cache(self: &mut Cache) -> Result<CacheRecord, Box<dyn Error>> {
+        if self.cache.len() == Self::CACHE_MAX {
+            // try to remove lru
+            let evicted_key = self.lru.evict_lru().ok_or("lru empty when evicting")?;
+            let evicted = self
+                .cache
+                .get(&evicted_key)
+                .ok_or("evicted lru key doesn't exist in cache")?
+                .clone();
+            self.cache.remove(&evicted_key);
+            return Ok(evicted);
         }
 
-        true
+        Err("cache is not full".into())
     }
 
-    pub fn is_cache_allowed(self: &Cache, word_list: &Vec<String>) -> bool {
-        // println!("Split cache control: {:?}", word_list);
-        return self.is_cache_allowed_list(word_list);
+    pub fn remove_cache(self: &mut Cache, request: &String) -> Result<CacheRecord, Box<dyn Error>> {
+        self.lru
+            .evict_lru_by_value(request)
+            .ok_or("no lru value exists when removing request")?;
+        let record = self
+            .cache
+            .get(request)
+            .ok_or("evicted lru key doesn't exist in cache")?
+            .clone();
+        self.cache.remove(request);
+        Ok(record)
     }
-
 }

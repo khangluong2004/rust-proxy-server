@@ -1,0 +1,129 @@
+Accepted
+Request tail Accept: */*
+GETting localhost /simple
+Response body length 12
+Accepted
+Request tail Accept: */*
+Serving localhost /simple from cache
+Accepted
+Request tail Accept: */*
+GETting localhost /1
+Response body length 12
+Accepted
+Request tail Accept: */*
+GETting localhost /2
+Response body length 12
+Accepted
+Request tail Accept: */*
+GETting localhost /3
+Response body length 12
+Accepted
+Request tail Accept: */*
+GETting localhost /4
+Response body length 12
+Accepted
+Request tail Accept: */*
+GETting localhost /5
+Response body length 12
+Accepted
+Request tail Accept: */*
+GETting localhost /6
+Response body length 12
+Accepted
+Request tail Accept: */*
+GETting localhost /7
+Response body length 12
+Accepted
+Request tail Accept: */*
+GETting localhost /8
+Response body length 12
+Accepted
+Request tail Accept: */*
+GETting localhost /9
+Response body length 12
+Accepted
+Request tail Accept: */*
+GETting localhost /10
+Response body length 12
+Evicting localhost /simple from cache
+Accepted
+Request tail Accept: */*
+Serving localhost /10 from cache
+Accepted
+Request tail Accept: */*
+GETting localhost /11
+Response body length 12
+Evicting localhost /1 from cache
+Accepted
+Request tail Accept: */*
+GETting localhost /1001
+Response body length 12
+Evicting localhost /2 from cache
+Accepted
+Request tail Accept: */*
+GETting localhost /1002
+Response body length 12
+Evicting localhost /3 from cache
+Accepted
+Request tail Accept: */*
+GETting localhost /1003
+Response body length 12
+Evicting localhost /4 from cache
+Accepted
+Request tail Accept: */*
+GETting localhost /1004
+Response body length 12
+Evicting localhost /5 from cache
+Accepted
+Request tail Accept: */*
+GETting localhost /1005
+Response body length 12
+Evicting localhost /6 from cache
+Accepted
+Request tail Accept: */*
+GETting localhost /1006
+Response body length 12
+Evicting localhost /7 from cache
+Accepted
+Request tail Accept: */*
+GETting localhost /1007
+Response body length 12
+Evicting localhost /8 from cache
+Accepted
+Request tail Accept: */*
+GETting localhost /1008
+Response body length 12
+Evicting localhost /9 from cache
+Accepted
+Request tail Accept: */*
+GETting localhost /1009
+Response body length 12
+Evicting localhost /10 from cache
+Accepted
+Request tail Accept: */*
+GETting localhost /1010
+Response body length 12
+Evicting localhost /11 from cache
+Accepted
+Request tail Accept: */*
+Serving localhost /1001 from cache
+Accepted
+Request tail Accept: */*
+Serving localhost /1002 from cache
+Accepted
+Request tail Accept: */*
+GETting localhost /1011
+Response body length 12
+Evicting localhost /1003 from cache
+Accepted
+Request tail Accept: */*
+GETting localhost /long
+Response body length 200000
+Accepted
+Request tail Accept: */*
+GETting localhost /long
+Response body length 200000
+Accepted
+Request tail Accept: */*
+GETting localhost /long
+Response body length 200000

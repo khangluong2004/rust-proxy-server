@@ -1,0 +1,2 @@
+simple-cache b'GET /stale_test HTTP/1.1\r\nHost: localhost\r\nUser-Agent: curl/8.5.0\r\nAccept: */*\r\n\r\n'
+simple-cache b'GET /stale_test HTTP/1.1\r\nHost: localhost\r\nUser-Agent: curl/8.5.0\r\nAccept: */*\r\n\r\nIf-Modified-Since: Tue, 29 Oct 2024 16:56:32 GMT\r\n'

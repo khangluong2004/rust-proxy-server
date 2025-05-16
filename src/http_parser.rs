@@ -4,32 +4,51 @@ use std::error::Error;
 use std::io::Read;
 use std::net::TcpStream;
 
+// Http stream parser
 pub struct HttpParser<'a> {
     stream: &'a mut TcpStream,
+    // buffer for the currently read but unhandled bytes
     buffer: Vec<u8>,
-    pub lines: String,
+    // data for the entire request/response
+    data: Vec<u8>,
+    // header length for both request/response
+    header_length: usize,
 }
 
 impl<'a> HttpParser<'a> {
-    const CRLF_LEN: usize = 2;
+    pub const CRLF: &'static str = "\r\n";
+    pub const CRLF_BYTES: &'static [u8] = "\r\n".as_bytes();
+    pub const CRLF_LEN: usize = Self::CRLF.len();
     const READ_BUFFER_SIZE: usize = 1024;
-    const RESPONSE_MAX_SIZE: usize = 100_000;
+
     pub fn new(stream: &'a mut TcpStream) -> Self {
         HttpParser {
             stream,
             buffer: Vec::new(),
-            lines: String::new(),
+            data: Vec::new(),
+            header_length: 0,
         }
     }
 
-    fn read_line(self: &mut HttpParser<'a>) -> Result<String, Box<dyn Error>> {
+    // Return the header lines in utf-8
+    pub fn header_lines(self: &HttpParser<'a>) -> Result<String, Box<dyn Error>> {
+        Ok(String::from_utf8(
+            self.data[..self.header_length].to_owned(),
+        )?)
+    }
+
+    // Returns parser data
+    pub fn data(self: &HttpParser<'a>) -> Vec<u8> {
+        self.data.clone()
+    }
+
+    // Read a single line ended by \r\n, return the bytes as is
+    fn read_line(self: &mut HttpParser<'a>) -> Result<Vec<u8>, Box<dyn Error>> {
         loop {
             // check for \r\n
-            // Rust uses UTF8, which is backward-compatible with ASCII and ISO-8859-1
-            let line = String::from_utf8(self.buffer.clone())?;
-            if line.contains("\r\n") {
-                let line = line.split("\r\n").nth(0).unwrap().to_string();
-                self.buffer = self.buffer[(line.len() + "\r\n".len())..].to_owned();
+            if let Some(index) = self.buffer.windows(2).position(|w| w == Self::CRLF_BYTES) {
+                let line = self.buffer[..index + Self::CRLF_LEN].to_owned();
+                self.buffer = self.buffer[index + Self::CRLF_LEN..].to_owned();
                 return Ok(line);
             }
 
@@ -40,52 +59,45 @@ impl<'a> HttpParser<'a> {
         }
     }
 
+    // Read a http request from the stream
     pub fn read_request(self: &mut HttpParser<'a>) -> Result<Request, Box<dyn Error>> {
-        self.lines.clear();
+        self.data.clear();
 
         loop {
             let line = self.read_line()?;
-            self.lines += (line.clone() + "\r\n").as_str();
+            self.data.extend_from_slice(&line);
 
-            if line == "" {
-                return Request::from_string(self.lines.clone());
+            let line = String::from_utf8(line)?;
+            if line == Self::CRLF {
+                self.header_length = self.data.len();
+                return Request::from_string(String::from_utf8(self.data.clone())?);
             }
         }
     }
 
+    // Read an http response from the stream, will also consume the blank line
     pub fn read_response_header(self: &mut HttpParser<'a>) -> Result<Response, Box<dyn Error>> {
-        self.lines.clear();
+        self.data.clear();
 
         loop {
             let line = self.read_line()?;
-            self.lines += (line.clone() + "\r\n").as_str();
+            self.data.extend_from_slice(&line);
 
-            if line == "" {
-                return Response::from_string(self.lines.clone());
+            let line = String::from_utf8(line)?;
+            if line == Self::CRLF {
+                self.header_length = self.data.len();
+                return Response::from_string(String::from_utf8(self.data.clone())?);
             }
         }
     }
 
-    // Call after reading the response, to add additional header
-    // Return the new request
-    pub fn add_header(self: &HttpParser<'a>, mut request: String, key: String, value: &String) -> String{
-        // Truncate the last 2 "\r\n" bytes
-        request.truncate(self.lines.len() - HttpParser::CRLF_LEN);
-        // Add the new key value to the header
-        let new_header = key + ": " + value + "\r\n";
-        request.push_str(&new_header);
-        // Add back CRLfF
-        request.push_str("\r\n");
-
-        request
-    }
-
-    pub fn read_bytes(self: &mut HttpParser<'a>) -> Result<Vec<u8>, Box<dyn Error>> {
-        // Read the remaining after reading the header 
+    // Read a series of bytes
+    pub fn read_bytes(self: &mut HttpParser<'a>, max_size: usize) -> Result<Vec<u8>, Box<dyn Error>> {
+        // Read the remaining after reading the header
         // Note, since buffer is shrunk to its exact length, no need to truncate
         // bunch of zeros
         if self.buffer.len() > 0 {
-            self.lines += &String::from_utf8(self.buffer.clone())?;
+            self.data.extend_from_slice(&self.buffer);
             let result = self.buffer.to_vec();
             self.buffer.clear();
             return Ok(result);
@@ -94,88 +106,13 @@ impl<'a> HttpParser<'a> {
         let mut buffer = vec![0; Self::READ_BUFFER_SIZE];
         let bytes_read = self.stream.read(&mut buffer)?;
         buffer.resize(bytes_read, 0);
-        
+
         // No need to store if the length exceeds cache requirement.
-        // Max size reached would be 101,024 bytes, which is acceptable.
-        if self.lines.len() < Self::RESPONSE_MAX_SIZE {
-            self.lines += &String::from_utf8(buffer.clone())?;
+        // Max size reached would be 100kib + 1,024b, which is acceptable.
+        if self.data.len() <= max_size {
+            self.data.extend_from_slice(&buffer);
         }
         Ok(buffer)
     }
 
-    // Task 3: Cache-control parser helper functions
-
-    // Special parse for cache header: Split by comma, and treat quoted string 
-    // as 1 token
-    // Rules from RFC9110:
-    // Without quotation mark: "!" / "#" / "$" / "%" / "&" / "'" / "*"
-    //  / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
-    //  / DIGIT / ALPHA
-    // With quotation mark: Any character, except \" and \\
-    // If there is backlash, ignore all rules and treat next char as character
-    // Should only see backlash inside quotation mark
-    pub fn cache_control_split(self: &HttpParser<'a>, cache_header: &String) -> Vec<String>{
-        let mut result = Vec::new();
-        let mut cur_str = String::new();
-        let mut is_quoted = false;
-        let mut is_backlash = false;
-        for c in cache_header.chars(){
-            if !is_backlash {
-                // End the word if is not in quote and get comma
-                if !is_quoted && c == ',' {
-                    result.push(cur_str.clone());
-                    cur_str.clear();
-                    continue;
-                }
-
-                // Skip space and htab if not in quoted
-                if !is_quoted && (c == ' ' || c == '\t'){
-                    continue;
-                }  
-
-                // Start quote
-                if c == '"'{
-                    is_quoted = !is_quoted;
-                }
-
-                // Turn on backlash if is backlash
-                if is_quoted && c == '\\'{
-                    is_backlash = true;
-                }
-            }
-            
-            // Turn off backlash
-            if is_backlash {
-                is_backlash = false;
-            }
-
-            cur_str.push(c);
-        }
-
-        // Add the end, if any
-        if cur_str.len() > 0 {
-            result.push(cur_str);
-        }
-        
-        result
-    }
-
-    // Task 4 helpers: Extract expiry time from directive
-    pub fn get_cache_expire(self: &HttpParser<'a>, cache_directive_list: &Vec<String>) -> Option<u32>{
-        for cache_directive in cache_directive_list {
-            if !cache_directive.contains("max-age=") {
-                continue;
-            }
-            
-            let prefix_len = "max-age=".len();
-            match cache_directive[prefix_len..].parse::<u32>(){
-                Ok(expiry_time) => {return Some(expiry_time);},
-                Err(_) => {return None;}
-            };
-        }
-
-        None
-    }
-
-    
 }

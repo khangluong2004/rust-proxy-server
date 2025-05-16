@@ -1,13 +1,14 @@
+mod cache;
+mod http_parser;
+mod lru_queue;
+mod proxy;
 mod request;
 mod response;
-mod http_parser;
-mod proxy;
-mod cache;
-mod lru_queue;
+mod headers;
 
+use crate::proxy::Proxy;
 use std::env;
 use std::error::Error;
-use crate::proxy::Proxy;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
@@ -30,7 +31,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
     }
-    
+
     let mut proxy = Proxy::new(does_cache);
     proxy.start_server(port)
 }
