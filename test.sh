@@ -17,3 +17,5 @@ curl -v http://anzac.unimelb.edu.au/ -o anzac_real.txt
 
 # Task 5
 diff washington_real.txt washington_proxy.txt | head -n 10
+
+curl -H "Cache-Control: hello=\"hello world abcdefg\",hello2=\"abc\\\"efg\",private" --proxy "$PROXY" -v http://www.washington.edu/ -o washington_proxy.txt
