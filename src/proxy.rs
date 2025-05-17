@@ -174,9 +174,10 @@ impl Proxy {
                 println!("Not caching {} {}", request_host, request_url);
                 evict_if_expired(self)?;
             } else {
-                evict_if_expired(self)?;
-
                 // cache response
+                // Add cache will overwrite the old response,
+                // and add_lru will flip entries to the end if exist.
+                // So no need to evict (specs also don't allow log here)
                 self.cache.add_cache(
                     original_request_headers,
                     request,

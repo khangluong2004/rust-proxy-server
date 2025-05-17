@@ -88,8 +88,8 @@ impl Cache {
             return Err("cache is full".into());
         }
 
-        let time_now = Instant::now();
         self.lru.add_lru(&request_data);
+        let time_now = Instant::now();
         self.cache.insert(
             request_data,
             CacheRecord::new(request, response_data, time_now, expiry, date),
