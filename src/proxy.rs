@@ -108,6 +108,7 @@ impl Proxy {
                 }
 
                 stream.shutdown(Shutdown::Both)?;
+                proxy.shutdown(Shutdown::Both)?;
 
                 return Ok(());
             }

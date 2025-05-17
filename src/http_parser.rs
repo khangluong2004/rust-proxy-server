@@ -93,6 +93,7 @@ impl<'a> HttpParser<'a> {
 
         loop {
             let line = self.read_line()?;
+            // Max is 19KiB, so should be fine
             self.data.extend_from_slice(&line);
 
             let line = String::from_utf8(line)?;
