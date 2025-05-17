@@ -10,9 +10,13 @@ pub struct Request {
 
 impl Request {
     const HEADER_PARTS: usize = 2;
+    const HOST: &'static str = "host";
 
-    pub fn get_host(self: &Request) -> String {
-        self.headers.get("host").unwrap().clone()
+    pub fn get_host(self: &Request) -> Result<String, Box<dyn Error>> {
+        let host_val = self.headers.get(Request::HOST)
+            .ok_or("Host header not found")?
+            .clone();
+        Ok(host_val)
     }
 
     pub fn from_string(request: String) -> Result<Self, Box<dyn Error>> {

@@ -1,4 +1,5 @@
 use crate::http_parser::HttpParser;
+use std::error::Error;
 
 pub const IF_MODIFIED_SINCE_HEADER: &'static str = "If-Modified-Since";
 pub const CONTENT_LENGTH_HEADER: &'static str = "content-length";
@@ -39,18 +40,19 @@ impl CacheControlHeader {
     // Without quotation mark: "!" / "#" / "$" / "%" / "&" / "'" / "*"
     //  / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
     //  / DIGIT / ALPHA
-    // With quotation mark: Any character, except \" and \\
+    // With quotation mark: Any character, except " and \
     // If there is backlash, ignore all rules and treat next char as character
     // Should only see backlash inside quotation mark
-    fn cache_control_split(cache_header: &String) -> Vec<String> {
+    fn cache_control_split(cache_header: &String) -> Result<Vec<String>, Box<dyn Error>> {
         let mut result = vec![];
         let mut current = "".to_string();
 
         let mut ptr = 0;
         let mut is_quoted = false;
-        let text = cache_header.as_bytes();
+        let text = cache_header.as_bytes().to_vec();
         while ptr < text.len() {
-            let c = char::from(text[ptr]);
+            // Guaranteed to be safe with loop condition
+            let c = char::from(text[ptr]); 
             let c_str = c.to_string();
             match (is_quoted, c) {
                 (true, '"') => {
@@ -59,7 +61,8 @@ impl CacheControlHeader {
                 }
                 (true, '\\') => {
                     ptr += 1;
-                    current += &text[ptr].to_string();
+                    current += &text.get(ptr)
+                        .ok_or("Backlash at the end of line")?.to_string();
                 }
                 (false, '"') => {
                     is_quoted = true;
@@ -81,14 +84,14 @@ impl CacheControlHeader {
             result.push(current.trim().to_lowercase().to_string());
         }
 
-        result
+        Ok(result)
     }
 
     // Create an entry for the Cache-Control header
-    pub fn new(cache_header: &String) -> Self {
-        Self {
-            words: Self::cache_control_split(cache_header),
-        }
+    pub fn new(cache_header: &String) -> Result<Self, Box<dyn Error>> {
+        Ok(Self {
+            words: Self::cache_control_split(cache_header)?,
+        })
     }
     
     // Whether this response should be cached given the header
@@ -111,6 +114,7 @@ impl CacheControlHeader {
             }
 
             let prefix_len = MAX_AGE_ENTRY.len();
+            // Ignore invalid max-age
             return cache_directive[prefix_len..].parse::<u32>().ok();
         }
 

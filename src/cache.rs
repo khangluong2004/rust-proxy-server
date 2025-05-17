@@ -106,12 +106,8 @@ impl Cache {
         if self.cache.len() == Self::CACHE_MAX {
             // try to remove lru
             let evicted_key = self.lru.evict_lru().ok_or("lru empty when evicting")?;
-            let evicted = self
-                .cache
-                .get(&evicted_key)
-                .ok_or("evicted lru key doesn't exist in cache")?
-                .clone();
-            self.cache.remove(&evicted_key);
+            let evicted = self.cache.remove(&evicted_key)
+                .ok_or("evicted lru key doesn't exist in cache")?;
             return Ok(evicted);
         }
 
@@ -122,12 +118,8 @@ impl Cache {
         self.lru
             .evict_lru_by_value(request)
             .ok_or("no lru value exists when removing request")?;
-        let record = self
-            .cache
-            .get(request)
-            .ok_or("evicted lru key doesn't exist in cache")?
-            .clone();
-        self.cache.remove(request);
+        let record = self.cache.remove(request)
+            .ok_or("evicted lru key doesn't exist in cache")?;
         Ok(record)
     }
 }

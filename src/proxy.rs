@@ -24,7 +24,6 @@ impl Proxy {
     }
 
     fn handle_connection(self: &mut Proxy, mut stream: TcpStream) -> Result<(), Box<dyn Error>> {
-        // TODO: Check set socket params (Why?)
         // No need for SO_REUSEADDR as set by default
         stream.set_nodelay(true)?;
         println!("Accepted");
@@ -40,9 +39,13 @@ impl Proxy {
         let lines = request_headers
             .split(HttpParser::CRLF)
             .collect::<Vec<&str>>();
-        println!("Request tail {}", lines[lines.len() - Self::TAIL_OFFSET]);
 
-        let request_host = request.get_host();
+        // If length less than 3 (TAIL_OFFSET), error
+        println!("Request tail {}", lines.get(lines.len() - Self::TAIL_OFFSET)
+            .ok_or("Unexpected format for request headers")?);
+
+        let request_host = request.get_host()?;
+        // Already throw if can't get url
         let request_url = request.url.clone();
         let mut is_expired = false;
         let mut option_cache_record: Option<CacheRecord> = None;
@@ -76,7 +79,7 @@ impl Proxy {
                     let record = self.cache.remove_lru_cache()?;
                     println!(
                         "Evicting {} {} from cache",
-                        record.request.get_host(),
+                        record.request.get_host()?,
                         record.request.url
                     );
                 }
@@ -123,7 +126,7 @@ impl Proxy {
         let mut allow_cache = true;
         let mut expiry_time = None;
         if let Some(cache_control_val) = response.headers.get(headers::CACHE_CONTROL_HEADER) {
-            let cache_control = CacheControlHeader::new(cache_control_val);
+            let cache_control = CacheControlHeader::new(cache_control_val)?;
             allow_cache = cache_control.should_cache();
             if allow_cache {
                 expiry_time = cache_control.cache_expire();
@@ -154,7 +157,7 @@ impl Proxy {
                 let record = proxy.cache.remove_cache(&original_request_headers)?;
                 println!(
                     "Evicting {} {} from cache",
-                    record.request.get_host(),
+                    record.request.get_host()?,
                     record.request.url
                 );
             }
@@ -194,7 +197,7 @@ impl Proxy {
     pub fn start_server(self: &mut Proxy, port: u16) -> Result<(), Box<dyn Error>> {
         // start listener
         // note that the default backlog is 128 in rust, and it cannot be changed
-        let listener = TcpListener::bind(format!(":::{}", port))?;
+        let listener = TcpListener::bind(format!("[::]:{}", port))?;
         for stream in listener.incoming() {
             let result = stream
                 .map_err(|e| e.into())

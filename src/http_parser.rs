@@ -20,6 +20,7 @@ impl<'a> HttpParser<'a> {
     pub const CRLF_BYTES: &'static [u8] = "\r\n".as_bytes();
     pub const CRLF_LEN: usize = Self::CRLF.len();
     const READ_BUFFER_SIZE: usize = 1024;
+    const MAX_RESPONSE_SIZE: usize = 8192; // 8KiB
 
     pub fn new(stream: &'a mut TcpStream) -> Self {
         HttpParser {
@@ -45,6 +46,11 @@ impl<'a> HttpParser<'a> {
     // Read a single line ended by \r\n, return the bytes as is
     fn read_line(self: &mut HttpParser<'a>) -> Result<Vec<u8>, Box<dyn Error>> {
         loop {
+            // Check if pass the size limit. Throw error if it is
+            if self.buffer.len() > HttpParser::MAX_RESPONSE_SIZE {
+                return Err("Header line is longer than 8KiB".into());
+            }
+
             // check for \r\n
             if let Some(index) = self.buffer.windows(2).position(|w| w == Self::CRLF_BYTES) {
                 let line = self.buffer[..index + Self::CRLF_LEN].to_owned();
@@ -55,6 +61,7 @@ impl<'a> HttpParser<'a> {
             let mut buffer = vec![0; Self::READ_BUFFER_SIZE];
             let bytes_read = self.stream.read(&mut buffer)?;
             buffer.resize(bytes_read, 0);
+            // Max can reach is 8 + 1 = 9KiB, so fine
             self.buffer.extend_from_slice(&buffer);
         }
     }
@@ -65,12 +72,17 @@ impl<'a> HttpParser<'a> {
 
         loop {
             let line = self.read_line()?;
+            // Max is 19KiB, so should be fine
             self.data.extend_from_slice(&line);
 
             let line = String::from_utf8(line)?;
             if line == Self::CRLF {
                 self.header_length = self.data.len();
                 return Request::from_string(String::from_utf8(self.data.clone())?);
+            }
+
+            if self.data.len() > HttpParser::MAX_RESPONSE_SIZE {
+                return Err("Request header reaches above 8KiB limit".into());
             }
         }
     }
@@ -87,6 +99,10 @@ impl<'a> HttpParser<'a> {
             if line == Self::CRLF {
                 self.header_length = self.data.len();
                 return Response::from_string(String::from_utf8(self.data.clone())?);
+            }
+
+            if self.data.len() > HttpParser::MAX_RESPONSE_SIZE {
+                return Err("Response header reaches above 8KiB limit".into());
             }
         }
     }

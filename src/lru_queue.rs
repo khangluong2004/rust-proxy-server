@@ -1,4 +1,5 @@
-// TODO: Maybe implement a linked list with WeakRef or hacks (for performance?)
+// Maybe implement a linked list with WeakRef or hacks (for performance?)
+// Lecturer allows Vec #765
 pub struct LruQueue<T>
 where
     T: Eq + PartialEq + Clone,
