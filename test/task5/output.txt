@@ -33,7 +33,7 @@ handle_connection error: can't find status code
 Accepted
 Request tail Accept: */*
 GETting what /bad_host
-handle_connection error: failed to lookup address information: Temporary failure in name resolution
+handle_connection error: failed to lookup address information: Name or service not known
 Accepted
 Request tail Accept: */*
 GETting localhost /bad_header

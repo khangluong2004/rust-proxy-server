@@ -1,21 +1,35 @@
 # Check for response headers. Script only checks data.
 # Can't close connection because of http/2
-PROXY="127.0.0.1:80"
+PROXY="127.0.0.1:8001"
 
-curl -v http://www.washington.edu/ -o washington_real.txt
-curl --proxy "$PROXY" -v http://www.washington.edu/ -o washington_proxy.txt
+# Remove log file
+rm ./curl.txt
+rm ./proxy.txt
+rm ./proxyerr.txt
 
-# Test header (by injecting into request for now)
-curl -H "Cache-control: max-age=1234 , whatever    ,    haha , test=\"space cache whatever\"" --proxy "$PROXY" -v http://www.washington.edu/ -o washington_proxy.txt
-curl -H "Cache-control: max-age=0 , whatever    ,    haha , test=\"space \\\"cache, , \\= whatever\"" --proxy "$PROXY" -v http://www.washington.edu/ -o washington_proxy.txt
+# Check body
+urls=("http://www.washington.edu/" "http://yimg.com/" "http://icio.us/" "http://rs6.net/" "http://www.faqs.org/faqs" "http://icanhazip.com/" "http://example.com/" "http://detectportal.firefox.com/" "http://info.cern.ch/" "http://anzac.unimelb.edu.au/")
+count=0
+for url in "${urls[@]}"; do
+    count=$((count+1))
+    echo "Test $url"
+    echo -e "Test $url \n" >> ./proxy.txt 
 
-# Test for anzac - Non-utf8 bytes for body
-curl -H "Cache-control: max-age=0 , whatever    ,    haha , test=\"space \\\"cache, , \\= whatever\"" --proxy "$PROXY" -v http://anzac.unimelb.edu.au/ -o anzac_proxy.txt
-curl -H "Cache-control: max-age=0 , whatever    ,    haha , test=\"space \\\"cache, , \\= whatever\"" -v http://anzac.unimelb.edu.au/ -o anzac_real.txt
+    # Start up server
+    ../../htproxy -p 8001 -c >> ./proxy.txt 2>> ./proxyerr.txt &
+    server=$!
 
-curl -v http://anzac.unimelb.edu.au/ -o anzac_real.txt
+    curl -v "$url" -o "real_$count.txt" &>> ./curl.txt
+    curl --proxy "$PROXY" -v "$url" -o "proxy_$count.txt" &>> ./curl.txt
 
-# Task 5
-diff washington_real.txt washington_proxy.txt | head -n 10
+    echo "Diff $url"
+    diff "real_$count.txt" "proxy_$count.txt" | head -n 10
 
-curl -H "Cache-Control: hello=\"hello world abcdefg\",hello2=\"abc\\\"efg\",private" --proxy "$PROXY" -v http://www.washington.edu/ -o washington_proxy.txt
+    # Kill server
+    echo "Kill server"
+    kill -9 $server
+done
+
+# Clean up test file
+rm proxy_*.txt
+rm real_*.txt

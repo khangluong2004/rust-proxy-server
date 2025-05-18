@@ -1,0 +1,62 @@
+Test http://www.washington.edu/ 
+
+Accepted
+Request tail Proxy-Connection: Keep-Alive
+GETting www.washington.edu http://www.washington.edu/
+Response body length 78618
+Test http://yimg.com/ 
+
+Accepted
+Request tail Proxy-Connection: Keep-Alive
+GETting yimg.com http://yimg.com/
+Response body length 194
+Test http://icio.us/ 
+
+Accepted
+Request tail Proxy-Connection: Keep-Alive
+GETting icio.us http://icio.us/
+Response body length 11321
+Test http://rs6.net/ 
+
+Accepted
+Request tail Proxy-Connection: Keep-Alive
+GETting rs6.net http://rs6.net/
+Response body length 1638
+Not caching rs6.net http://rs6.net/
+Test http://www.faqs.org/faqs 
+
+Accepted
+Request tail Proxy-Connection: Keep-Alive
+GETting www.faqs.org http://www.faqs.org/faqs
+Response body length 233
+Test http://icanhazip.com/ 
+
+Accepted
+Request tail Proxy-Connection: Keep-Alive
+GETting icanhazip.com http://icanhazip.com/
+Response body length 13
+Test http://example.com/ 
+
+Accepted
+Request tail Proxy-Connection: Keep-Alive
+GETting example.com http://example.com/
+Response body length 1256
+Test http://detectportal.firefox.com/ 
+
+Accepted
+Request tail Proxy-Connection: Keep-Alive
+GETting detectportal.firefox.com http://detectportal.firefox.com/
+Response body length 8
+Not caching detectportal.firefox.com http://detectportal.firefox.com/
+Test http://info.cern.ch/ 
+
+Accepted
+Request tail Proxy-Connection: Keep-Alive
+GETting info.cern.ch http://info.cern.ch/
+Response body length 646
+Test http://anzac.unimelb.edu.au/ 
+
+Accepted
+Request tail Proxy-Connection: Keep-Alive
+GETting anzac.unimelb.edu.au http://anzac.unimelb.edu.au/
+Response body length 4573

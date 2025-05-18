@@ -307,7 +307,9 @@ test_task5() {
   curl -vs 0.0.0.0:8001/no_host 2>&1 | less >>task5/curl.txt
 
   sleep 2
+  echo "Kill python"
   kill -9 $py
+  echo "Kill proxy"
   kill -9 $port
 
   echo "Kill exe and server"
