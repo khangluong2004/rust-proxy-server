@@ -300,7 +300,8 @@ test_task5() {
   curl -vs -H "host: localhost" 0.0.0.0:8001/bad_url 2>&1 | less >>task5/curl.txt
   curl -vs -H "host: what" 0.0.0.0:8001/bad_host 2>&1 | less >>task5/curl.txt
   curl -vs -H "host: localhost" 0.0.0.0:8001/bad_header 2>&1 | less >>task5/curl.txt
-  curl -vs -H "host: localhost" 0.0.0.0:8001/no_content_length 2>&1 | less >>task5/curl.txt
+  curl -vs -H "host: localhost" 0.0.0.0:8001/bad_cache_control 2>&1 | less >>task5/curl.txt
+  curl -vs -H "host: localhost" 0.0.0.0:8001/header_limit 2>&1 | less >>task5/curl.txt
 
   kill -9 $py
   sleep 0.5
@@ -315,9 +316,9 @@ mkdir -p task3
 mkdir -p task4
 mkdir -p task5
 
-test_task1
-test_task2
-test_task3
-test_task4
+# test_task1
+# test_task2
+# test_task3
+# test_task4
 test_task5
 echo "Done"

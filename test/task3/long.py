@@ -5,22 +5,30 @@ server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 server.bind(('0.0.0.0', 80))
 server.listen(5)
 
-samples = [
+seeds = [
+	# No cache
 	"a=b,c=d,e=f,\t private ,g=d",
 	"a=b,c=d,e=f,private\t,g=d",
 	"!,#,$,%%#,+=##!,$=%%%,yes=',no=`,private",
 	"hello=\t\"hello world abcdefg\" ,    hello2=\"abc\\\"efg\",private",
 	"hello=\"abc\\=efg\",private",
-	"hello=\"abc\\\\efg\",private"
-	"\thello=\"abc\\!efg\",    \t   private\t"
-	"hello=\"abc\\'efg\"   ,private"
+	"hello=\"abc\\\\efg\",private",
+	"\thello=\"abc\\!efg\",    \t   private\t",
+	"hello=\"abc\\'efg\"   ,private",
 	"FDSFSDg*FD12=\"abc\\'#!@G&*(@!)efg\"   ,PRiVAtE",
 	"PRIVATE\t,FDSFSDg*FD12=\"abc\\'#!@G&*(@!)efg\"\t\t",
 	"\t\tprivaTE\t,FDSFSDg*FD12=\"abc\\'#!@G&*(@!)efg\"  \t ",
+
+	# Yes cache
 	"PRIvvATE\t,FDSFSDg*FD12=\"abc\\'#!@G&*(@!)efg\"\t\t",
     "\t\tpriva!TE\t,FDSFSDg*FD12=\"abc\\'#!@G&*(@!)efg\"  \t ",
     "FDSFSDg*FD12=\"abc\\'#!@G&*(@!)privateefg\"  \t ",
 ]
+
+samples = []
+for seed in seeds:
+	samples += [seed] * 2
+
 i = 0
 while True:
 	sock, addr = server.accept()

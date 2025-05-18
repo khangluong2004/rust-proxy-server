@@ -102,23 +102,32 @@ Accepted
 Request tail Accept: */*
 GETting localhost /5
 Response body length 12
+Not caching localhost /5
 Accepted
 Request tail Accept: */*
-Serving localhost /5 from cache
+GETting localhost /5
+Response body length 12
+Not caching localhost /5
 Accepted
 Request tail Accept: */*
 GETting localhost /6
 Response body length 12
+Not caching localhost /6
 Accepted
 Request tail Accept: */*
-Serving localhost /6 from cache
+GETting localhost /6
+Response body length 12
+Not caching localhost /6
 Accepted
 Request tail Accept: */*
 GETting localhost /7
 Response body length 12
+Not caching localhost /7
 Accepted
 Request tail Accept: */*
-Serving localhost /7 from cache
+GETting localhost /7
+Response body length 12
+Not caching localhost /7
 Accepted
 Request tail Accept: */*
 GETting localhost /8

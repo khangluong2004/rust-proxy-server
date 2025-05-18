@@ -41,6 +41,19 @@ while True:
 	elif i == 5:
 		sock.send(b"HTTP/1.1 200 OK\r\n")
 		sock.send(b"\r\n")
+	elif i == 6:
+		sock.send(b"HTTP/1.1 200 OK\r\n")
+		sock.send(b"Date: Tue, 29 Oct 2024 16:56:32 GMT\r\n")
+		sock.send(b"Cache-Control: \\\r\n")
+		sock.send(b"\r\n")
+		sock.send(b"Hello World!")
+	elif i == 7:
+		header = b"HTTP/1.1 200 OK\r\n"
+		header += b"Date: Tue, 29 Oct 2024 16:56:32 GMT\r\n"
+		header += b'a' * (8192 - len(header))
+		print("TESTING header limit:", len(header))
+		sock.send(b"\r\n")
+		sock.send(b"Hello World!")
 	else:
 		# send response
 		sock.send(b"HTTP/1.1 200 OK\r\n")
