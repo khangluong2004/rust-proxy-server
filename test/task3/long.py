@@ -5,7 +5,7 @@ server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 server.bind(('0.0.0.0', 80))
 server.listen(5)
 
-seeds = [
+no_seeds = [
 	# No cache
 	"a=b,c=d,e=f,\t private ,g=d",
 	"a=b,c=d,e=f,private\t,g=d",
@@ -18,7 +18,9 @@ seeds = [
 	"FDSFSDg*FD12=\"abc\\'#!@G&*(@!)efg\"   ,PRiVAtE",
 	"PRIVATE\t,FDSFSDg*FD12=\"abc\\'#!@G&*(@!)efg\"\t\t",
 	"\t\tprivaTE\t,FDSFSDg*FD12=\"abc\\'#!@G&*(@!)efg\"  \t ",
+]
 
+yes_seeds = [
 	# Yes cache
 	"PRIvvATE\t,FDSFSDg*FD12=\"abc\\'#!@G&*(@!)efg\"\t\t",
     "\t\tpriva!TE\t,FDSFSDg*FD12=\"abc\\'#!@G&*(@!)efg\"  \t ",
@@ -26,8 +28,9 @@ seeds = [
 ]
 
 samples = []
-for seed in seeds:
+for seed in no_seeds:
 	samples += [seed] * 2
+samples += yes_seeds
 
 i = 0
 while True:
