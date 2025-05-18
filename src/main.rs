@@ -9,6 +9,7 @@ mod headers;
 use crate::proxy::Proxy;
 use std::env;
 use std::error::Error;
+use std::panic;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
@@ -32,6 +33,19 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    let mut proxy = Proxy::new(does_cache);
-    proxy.start_server(port)
+    // Paranoid error check
+    loop {
+        if let Ok(some) = panic::catch_unwind(||->Result<(), Box<dyn Error>> {
+            let mut proxy = Proxy::new(does_cache);
+            proxy.start_server(port)?;
+            Ok(())
+        }) {
+            match some {
+                Ok(_) => {},
+                Err(err) => {print!("{:?}. Caught error! Restart proxy", err)}
+            }
+        } else {
+            println!("Caught panic! Restart proxy");
+        };
+    }
 }

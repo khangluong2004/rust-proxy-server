@@ -5,6 +5,7 @@ use crate::http_parser::HttpParser;
 use std::error::Error;
 use std::io::Write;
 use std::net::{Shutdown, TcpListener, TcpStream};
+use std::panic;
 
 pub struct Proxy {
     does_cache: bool,

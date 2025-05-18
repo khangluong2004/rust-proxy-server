@@ -13,7 +13,6 @@ Request tail Accept: */*
 Stale entry for localhost /stale_test
 GETting localhost /stale_test
 Response body length 12
-Evicting localhost /stale_test from cache
 Accepted
 Request tail Accept: */*
 Serving localhost /stale_test from cache

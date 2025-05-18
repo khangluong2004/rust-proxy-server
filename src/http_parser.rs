@@ -20,7 +20,7 @@ impl<'a> HttpParser<'a> {
     pub const CRLF_BYTES: &'static [u8] = "\r\n".as_bytes();
     pub const CRLF_LEN: usize = Self::CRLF.len();
     const READ_BUFFER_SIZE: usize = 1024;
-    const MAX_RESPONSE_SIZE: usize = 8192; // 8KiB
+    const MAX_HEADER_SIZE: usize = 8192; // 8KiB
 
     pub fn new(stream: &'a mut TcpStream) -> Self {
         HttpParser {
@@ -47,7 +47,7 @@ impl<'a> HttpParser<'a> {
     fn read_line(self: &mut HttpParser<'a>) -> Result<Vec<u8>, Box<dyn Error>> {
         loop {
             // Check if pass the size limit. Throw error if it is
-            if self.buffer.len() > HttpParser::MAX_RESPONSE_SIZE {
+            if self.buffer.len() > HttpParser::MAX_HEADER_SIZE {
                 return Err("Header line is longer than 8KiB".into());
             }
 
@@ -81,7 +81,7 @@ impl<'a> HttpParser<'a> {
                 return Request::from_string(String::from_utf8(self.data.clone())?);
             }
 
-            if self.data.len() > HttpParser::MAX_RESPONSE_SIZE {
+            if self.data.len() > HttpParser::MAX_HEADER_SIZE {
                 return Err("Request header reaches above 8KiB limit".into());
             }
         }
@@ -102,7 +102,7 @@ impl<'a> HttpParser<'a> {
                 return Response::from_string(String::from_utf8(self.data.clone())?);
             }
 
-            if self.data.len() > HttpParser::MAX_RESPONSE_SIZE {
+            if self.data.len() > HttpParser::MAX_HEADER_SIZE {
                 return Err("Response header reaches above 8KiB limit".into());
             }
         }
