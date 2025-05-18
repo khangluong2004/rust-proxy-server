@@ -300,14 +300,17 @@ test_task5() {
   curl -vs -H "host: localhost" 0.0.0.0:8001/bad_url 2>&1 | less >>task5/curl.txt
   curl -vs -H "host: what" 0.0.0.0:8001/bad_host 2>&1 | less >>task5/curl.txt
   curl -vs -H "host: localhost" 0.0.0.0:8001/bad_header 2>&1 | less >>task5/curl.txt
+  curl -vs -H "host: localhost" 0.0.0.0:8001/no_content_length 2>&1 | less >>task5/curl.txt
   curl -vs -H "host: localhost" 0.0.0.0:8001/bad_cache_control 2>&1 | less >>task5/curl.txt
-  curl -vs -H "host: localhost" 0.0.0.0:8001/header_limit 2>&1 | less >>task5/curl.txt
+  curl -vs -H "host: localhost" 0.0.0.0:8001/header_at_limit 2>&1 | less >>task5/curl.txt
+  curl -vs -H "host: localhost" 0.0.0.0:8001/header_over_limit 2>&1 | less >>task5/curl.txt
+  curl -vs 0.0.0.0:8001/no_host 2>&1 | less >>task5/curl.txt
 
+  sleep 2
   kill -9 $py
-  sleep 0.5
+  kill -9 $port
 
   echo "Kill exe and server"
-  kill -9 $port
 }
 
 mkdir -p task1
