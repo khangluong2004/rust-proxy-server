@@ -16,6 +16,7 @@ impl Proxy {
     const TAIL_OFFSET: usize = 3;
     const REQUEST_CACHE_LENGTH: usize = 2000;
     const RESPONSE_CACHE_LENGTH: usize = 100 * 1024;
+    const NOT_MODIFIED_STATUS_CODE: &'static str = "304";
 
     pub fn new(does_cache: bool) -> Self {
         Self {
@@ -98,7 +99,7 @@ impl Proxy {
         let response = response_parser.read_response_header()?;
 
         // Get status code for task 5. If 304, return early.
-        if self.does_cache && response.status_code == "304" {
+        if self.does_cache && response.status_code == Self::NOT_MODIFIED_STATUS_CODE {
             if let Some(cache_value) = option_cache_record {
                 // use cache and log
                 println!("Serving {} {} from cache", request_host, request.url);
