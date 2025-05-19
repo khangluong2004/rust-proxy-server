@@ -60,6 +60,9 @@ impl<'a> HttpParser<'a> {
 
             let mut buffer = vec![0; Self::READ_BUFFER_SIZE];
             let bytes_read = self.stream.read(&mut buffer)?;
+            if bytes_read == 0 {
+                return Err("reader closed unexpectedly".into());
+            }
             buffer.resize(bytes_read, 0);
             // Max can reach is 8 + 1 = 9KiB, so fine
             self.buffer.extend_from_slice(&buffer);
@@ -122,6 +125,9 @@ impl<'a> HttpParser<'a> {
 
         let mut buffer = vec![0; Self::READ_BUFFER_SIZE];
         let bytes_read = self.stream.read(&mut buffer)?;
+        if bytes_read == 0 {
+            return Err("reader closed unexpectedly".into());
+        }
         buffer.resize(bytes_read, 0);
 
         // No need to store if the length exceeds cache requirement.

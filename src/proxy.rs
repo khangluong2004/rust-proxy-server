@@ -6,7 +6,6 @@ use std::error::Error;
 use std::io::Write;
 use std::net::{Shutdown, TcpListener, TcpStream};
 
-
 pub struct Proxy {
     does_cache: bool,
     cache: Cache,
@@ -43,8 +42,12 @@ impl Proxy {
             .collect::<Vec<&str>>();
 
         // If length less than 3 (TAIL_OFFSET), error
-        println!("Request tail {}", lines.get(lines.len() - Self::TAIL_OFFSET)
-            .ok_or("Unexpected format for request headers")?);
+        println!(
+            "Request tail {}",
+            lines
+                .get(lines.len() - Self::TAIL_OFFSET)
+                .ok_or("Unexpected format for request headers")?
+        );
 
         let request_host = request.get_host()?;
         // Already throw if can't get url
@@ -92,6 +95,7 @@ impl Proxy {
 
         // create remote server socket and forward request
         let mut proxy = TcpStream::connect(format!("{}:80", request_host))?;
+        proxy.set_nodelay(true)?;
         proxy.write(&request_headers.as_bytes())?;
 
         // read server header
