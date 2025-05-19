@@ -19,6 +19,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     while i < args.len() {
         match args[i].as_str() {
             "-p" => {
+                if i + 1 >= args.len() {
+                    return Err("-p need a port".into());
+                }
                 port = args[i + 1].parse::<u16>()?;
                 i += 2;
             }
@@ -27,7 +30,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 i += 1;
             }
             _ => {
-                panic!("unknown argument {}", args[i]);
+                return Err(format!("unknown argument {}", args[i]).into());
             }
         }
     }
