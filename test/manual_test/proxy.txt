@@ -3,7 +3,7 @@ Test http://www.washington.edu/
 Accepted
 Request tail Proxy-Connection: Keep-Alive
 GETting www.washington.edu http://www.washington.edu/
-Response body length 78618
+Response body length 79876
 Test http://yimg.com/ 
 
 Accepted
@@ -34,7 +34,7 @@ Test http://icanhazip.com/
 Accepted
 Request tail Proxy-Connection: Keep-Alive
 GETting icanhazip.com http://icanhazip.com/
-Response body length 13
+Response body length 15
 Test http://example.com/ 
 
 Accepted

@@ -96,7 +96,7 @@ impl Proxy {
         // create remote server socket and forward request
         let mut proxy = TcpStream::connect(format!("{}:80", request_host))?;
         proxy.set_nodelay(true)?;
-        proxy.write(&request_headers.as_bytes())?;
+        proxy.write_all(&request_headers.as_bytes())?;
 
         // read server header
         let mut response_parser = HttpParser::new(&mut proxy);
