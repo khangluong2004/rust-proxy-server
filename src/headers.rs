@@ -5,6 +5,7 @@ pub const IF_MODIFIED_SINCE_HEADER: &'static str = "If-Modified-Since";
 pub const CONTENT_LENGTH_HEADER: &'static str = "content-length";
 pub const CACHE_CONTROL_HEADER: &'static str = "cache-control";
 pub const DATE_HEADER: &'static str = "date";
+pub const DATE_HEADER_DEFAULT: &'static str = "Wed, 21 May 2025 01:01:56 GMT";
 const CACHE_DISALLOWED_ENTRIES: [&'static str; 6] = [
     "private",
     "no-store",

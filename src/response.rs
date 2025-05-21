@@ -1,6 +1,7 @@
 use crate::http_parser::HttpParser;
 use std::collections::HashMap;
 use std::error::Error;
+use crate::headers;
 
 #[derive(Debug)]
 pub struct Response {
@@ -47,6 +48,13 @@ impl Response {
         }
 
         let status_code = status_code.ok_or("error parsing status code")?;
+
+        // If date is not in the header, use the default
+        // TODO: Rust has no std date. How to get current date ???
+        if !headers.contains_key(headers::DATE_HEADER) {
+            headers.insert(headers::DATE_HEADER.to_string(), headers::DATE_HEADER_DEFAULT.to_string());
+        }
+
         Ok(Response {
             headers,
             status_code,
