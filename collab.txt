@@ -1,0 +1,7 @@
+Task 1: Terry 
+Task 2: Terry
+Task 3: Khang
+Task 4: Khang
+Task 5: Khang
+
+Both review, re-factor, test and debug code from task 1 to 5.
