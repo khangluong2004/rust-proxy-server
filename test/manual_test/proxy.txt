@@ -34,7 +34,7 @@ Test http://icanhazip.com/
 Accepted
 Request tail Proxy-Connection: Keep-Alive
 GETting icanhazip.com http://icanhazip.com/
-Response body length 15
+Response body length 14
 Test http://example.com/ 
 
 Accepted

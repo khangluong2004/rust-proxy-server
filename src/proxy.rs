@@ -69,12 +69,14 @@ impl Proxy {
                 } else {
                     // Logging for task 4
                     println!("Stale entry for {} {}", request_host, request_url);
-                    // Modify the request_lines for task 5
-                    request_headers = headers::append_header(
-                        request_headers,
-                        &(headers::IF_MODIFIED_SINCE_HEADER.into()),
-                        &cache_value.date,
-                    );
+                    if let Some(date_val) = &cache_value.date {
+                        // Modify the request_lines for task 5, if there is Date
+                        request_headers = headers::append_header(
+                            request_headers,
+                            &(headers::IF_MODIFIED_SINCE_HEADER.into()),
+                            date_val,
+                        );
+                    }
                 }
 
                 option_cache_record = Some(cache_value);
@@ -141,11 +143,14 @@ impl Proxy {
         };
 
         // Get date
-        let date = response
+        let mut date = None;
+        
+        if let Some(date_val) = response
             .headers
-            .get(headers::DATE_HEADER)
-            .ok_or::<Box<dyn Error>>("no date in response".into())?
-            .clone();
+            .get(headers::DATE_HEADER){
+                date = Some(date_val.clone());
+        }
+        
 
         // forward header
         stream.write_all(&response_parser.data())?;

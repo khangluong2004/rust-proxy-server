@@ -10,7 +10,7 @@ pub struct CacheRecord {
     pub response: Vec<u8>,
     pub time_now: Instant,
     pub expiry_secs: Option<u32>,
-    pub date: String,
+    pub date: Option<String>,
 }
 
 impl CacheRecord {
@@ -20,7 +20,7 @@ impl CacheRecord {
         response: Vec<u8>,
         time_now: Instant,
         expiry_secs: Option<u32>,
-        date: String,
+        date: Option<String>,
     ) -> Self {
         Self {
             request,
@@ -82,7 +82,7 @@ impl Cache {
         request: Request,
         response_data: Vec<u8>,
         expiry: Option<u32>,
-        date: String,
+        date: Option<String>,
     ) -> Result<(), Box<dyn Error>> {
         if self.cache.len() == Self::CACHE_MAX {
             return Err("cache is full".into());
