@@ -96,11 +96,12 @@ impl CacheControlHeader {
     }
     
     // Whether this response should be cached given the header
-    // Task 4 helpers: Extract expiry time from directive
     pub fn should_cache(self: &CacheControlHeader) -> bool {
         for word in &self.words {
-            if CACHE_DISALLOWED_ENTRIES.contains(&word.as_str()) {
-                return false;
+            for disallowed_entry in CACHE_DISALLOWED_ENTRIES {
+                if word.contains(disallowed_entry){
+                    return false;
+                }
             }
         }
         
