@@ -143,14 +143,9 @@ impl Proxy {
         };
 
         // Get date
-        let mut date = None;
-        
-        if let Some(date_val) = response
+        let date = response
             .headers
-            .get(headers::DATE_HEADER){
-                date = Some(date_val.clone());
-        }
-        
+            .get(headers::DATE_HEADER).cloned();
 
         // forward header
         stream.write_all(&response_parser.data())?;
