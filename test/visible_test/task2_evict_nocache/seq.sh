@@ -1,7 +1,7 @@
 # Replace local host with the unimelb url, and add new line to all.log
 rm -rf *.txt
 
-echo "Test task2_binary2"
+echo "Test task2_evict_nocache"
 
 echo "Start proxy"
 ../../htproxy -p 8080 -c >output.txt 2>err.txt &

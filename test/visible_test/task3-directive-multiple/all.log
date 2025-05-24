@@ -1,0 +1,17 @@
+Accepted
+Request tail Proxy-Connection: Keep-Alive
+GETting unimelb-comp30023-2025.cloud.edu.au http://unimelb-comp30023-2025.cloud.edu.au/a?cache-control=must-revalidate,PRIVate
+Response body length 1
+Not caching unimelb-comp30023-2025.cloud.edu.au http://unimelb-comp30023-2025.cloud.edu.au/a?cache-control=must-revalidate,PRIVate
+Accepted
+Request tail Proxy-Connection: Keep-Alive
+GETting unimelb-comp30023-2025.cloud.edu.au http://unimelb-comp30023-2025.cloud.edu.au/a
+Response body length 2
+Accepted
+Request tail Proxy-Connection: Keep-Alive
+GETting unimelb-comp30023-2025.cloud.edu.au http://unimelb-comp30023-2025.cloud.edu.au/a?cache-control=must-revalidate,PRIVate
+Response body length 3
+Not caching unimelb-comp30023-2025.cloud.edu.au http://unimelb-comp30023-2025.cloud.edu.au/a?cache-control=must-revalidate,PRIVate
+Accepted
+Request tail Proxy-Connection: Keep-Alive
+Serving unimelb-comp30023-2025.cloud.edu.au http://unimelb-comp30023-2025.cloud.edu.au/a from cache
