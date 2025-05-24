@@ -1,0 +1,12 @@
+Accepted
+Request tail X-COMP30023: HI
+GETting unimelb-comp30023-2025.cloud.edu.au http://unimelb-comp30023-2025.cloud.edu.au/echo4
+Response body length 13
+Accepted
+Request tail X-COMP30023: HI
+Stale entry for unimelb-comp30023-2025.cloud.edu.au http://unimelb-comp30023-2025.cloud.edu.au/echo4
+GETting unimelb-comp30023-2025.cloud.edu.au http://unimelb-comp30023-2025.cloud.edu.au/echo4
+Response body length 30
+Accepted
+Request tail X-COMP30023: HI
+Serving unimelb-comp30023-2025.cloud.edu.au http://unimelb-comp30023-2025.cloud.edu.au/echo4 from cache
