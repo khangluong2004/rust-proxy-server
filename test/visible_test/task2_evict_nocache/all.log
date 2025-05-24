@@ -1,0 +1,54 @@
+Accepted
+Request tail Proxy-Connection: Keep-Alive
+GETting unimelb-comp30023-2025.cloud.edu.au http://unimelb-comp30023-2025.cloud.edu.au/echo/0
+Response body length 1
+Accepted
+Request tail Proxy-Connection: Keep-Alive
+GETting unimelb-comp30023-2025.cloud.edu.au http://unimelb-comp30023-2025.cloud.edu.au/echo/1
+Response body length 1
+Accepted
+Request tail Proxy-Connection: Keep-Alive
+GETting unimelb-comp30023-2025.cloud.edu.au http://unimelb-comp30023-2025.cloud.edu.au/echo/2
+Response body length 1
+Accepted
+Request tail Proxy-Connection: Keep-Alive
+GETting unimelb-comp30023-2025.cloud.edu.au http://unimelb-comp30023-2025.cloud.edu.au/echo/3
+Response body length 1
+Accepted
+Request tail Proxy-Connection: Keep-Alive
+GETting unimelb-comp30023-2025.cloud.edu.au http://unimelb-comp30023-2025.cloud.edu.au/echo/4
+Response body length 1
+Accepted
+Request tail Proxy-Connection: Keep-Alive
+GETting unimelb-comp30023-2025.cloud.edu.au http://unimelb-comp30023-2025.cloud.edu.au/echo/5
+Response body length 1
+Accepted
+Request tail Proxy-Connection: Keep-Alive
+GETting unimelb-comp30023-2025.cloud.edu.au http://unimelb-comp30023-2025.cloud.edu.au/echo/6
+Response body length 1
+Accepted
+Request tail Proxy-Connection: Keep-Alive
+GETting unimelb-comp30023-2025.cloud.edu.au http://unimelb-comp30023-2025.cloud.edu.au/echo/7
+Response body length 1
+Accepted
+Request tail Proxy-Connection: Keep-Alive
+GETting unimelb-comp30023-2025.cloud.edu.au http://unimelb-comp30023-2025.cloud.edu.au/echo/8
+Response body length 1
+Accepted
+Request tail Proxy-Connection: Keep-Alive
+GETting unimelb-comp30023-2025.cloud.edu.au http://unimelb-comp30023-2025.cloud.edu.au/echo/9
+Response body length 1
+Accepted
+Request tail Proxy-Connection: Keep-Alive
+Evicting unimelb-comp30023-2025.cloud.edu.au http://unimelb-comp30023-2025.cloud.edu.au/echo/0 from cache
+GETting unimelb-comp30023-2025.cloud.edu.au http://unimelb-comp30023-2025.cloud.edu.au/a
+Response body length 120000
+Accepted
+Request tail Proxy-Connection: Keep-Alive
+GETting unimelb-comp30023-2025.cloud.edu.au http://unimelb-comp30023-2025.cloud.edu.au/a
+Response body length 1
+Accepted
+Request tail Proxy-Connection: Keep-Alive
+Evicting unimelb-comp30023-2025.cloud.edu.au http://unimelb-comp30023-2025.cloud.edu.au/echo/1 from cache
+GETting unimelb-comp30023-2025.cloud.edu.au http://unimelb-comp30023-2025.cloud.edu.au/echo/0
+Response body length 1
