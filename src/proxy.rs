@@ -76,6 +76,8 @@ impl Proxy {
                             &(headers::IF_MODIFIED_SINCE_HEADER.into()),
                             date_val,
                         );
+
+                        // println!("{request_headers}");
                     }
                 }
 
@@ -156,6 +158,7 @@ impl Proxy {
             let bytes = response_parser.read_bytes(Self::RESPONSE_CACHE_LENGTH)?;
             stream.write_all(&bytes)?;
             count += bytes.len();
+            // eprint!("{count}");
         }
         stream.shutdown(Shutdown::Both)?;
 

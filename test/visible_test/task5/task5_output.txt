@@ -1,0 +1,18 @@
+Accepted
+Request tail Proxy-Connection: Keep-Alive
+GETting localhost http://localhost/
+Response body length 12
+Accepted
+Request tail Proxy-Connection: Keep-Alive
+Stale entry for localhost http://localhost/
+GET http://localhost/ HTTP/1.1
+Host: localhost
+User-Agent: curl/8.5.0
+Accept: */*
+Proxy-Connection: Keep-Alive
+
+If-Modified-Since: Tue, 29 Oct 2024 16:56:32 GMT
+
+GETting localhost http://localhost/
+Serving localhost http://localhost/ from cache
+Entry for localhost http://localhost/ unmodified

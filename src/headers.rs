@@ -20,11 +20,11 @@ const MAX_AGE_ENTRY: &'static str = "max-age=";
 pub fn append_header(header_lines: String, key: &String, value: &String) -> String {
     let stripped = header_lines[..header_lines.len() - HttpParser::CRLF_LEN].to_owned();
     format!(
-        "{}{}{}: {}{}",
+        "{}{}: {}{}{}",
         stripped,
-        HttpParser::CRLF,
         key,
         value,
+        HttpParser::CRLF,
         HttpParser::CRLF
     )
 }
