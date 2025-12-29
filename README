@@ -1,4 +1,7 @@
-COMP30023 2025 - Project 2
+Project 2
 
-Test cases will be added over time.
-See FAQ on Ed (#200) for more details.
+A rust http proxy server (with cache handling). 
+Made with https://github.com/Troppydash in a group of 2.
+
+Github workflow is linked with external Unimelb's hidden repo for testing.
+So it might no longer work.
